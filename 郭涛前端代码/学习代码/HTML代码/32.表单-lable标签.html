@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+
+    <title>32.表单-lable标签</title>
+</head>
+
+<body>
+    <form action="https://search.jd.com/search" target="_blank">
+        <!-- 文本输入框 -->
+        <!-- disabled -->
+        <label for="zhanghu"> 账户：</label>
+        <input id="zhanghu" type="text" name="account" value="原神" maxlength="4"><br>
+        <!-- 密码输入框 -->
+        <label>
+            密码：
+            <input id="mima" type="password" name="pwd" maxlength="4">
+        </label>
+        <!-- 单选框 --><br>
+        性别：
+        <label><input type="radio" name="gender" value="male" checked>男</label>
+        <label><input type="radio" name="gender" value="female">女</label>
+        <br>
+        <!-- 多选框 -->
+        爱好:
+        <label><input type="checkbox" name="hobby" value="sing" checked>唱</label>
+        <label><input type="checkbox" name="hobby" value="dance">跳</label>
+        <label><input type="checkbox" name="hobby" value="rap">rap</label>
+        <label><input type="checkbox" name="hobby" value="basketball" checked>篮球</label>
+        <!-- 文本框 -->
+        <br>
+        <label>
+            其他:<textarea name="other" cols="22" rows="5"></textarea></label>
+        <!--下拉框: -->
+        <br>籍贯:
+        <select name="place">
+            <option value="渝">重庆</option>
+            <option value="桂">广西</option>
+            <option value="川">四川</option>
+            <option value="沪" selected>上海</option>
+        </select>
+
+
+        <!-- 隐藏域 -->
+        <input type="hidden" name="from" value="toutiao">
+        <br>
+        <!-- 确认第一种写法 -->
+        <button>确认</button>
+        <!--重置-第二种写法  -->
+        <input type="reset" value="重置">
+        <!-- 重置按钮 -->
+        <button type="button">检查账户是否被注册</button>
+
+    </form>
+
+</body>
+
+</html>

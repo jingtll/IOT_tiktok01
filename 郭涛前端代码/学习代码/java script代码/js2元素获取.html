@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+
+<body>
+    <div id="block">默认内容</div>
+    <p class="iot">默认内容</p>
+    <p class="iot">默认内容</p>
+    <p class="iot">默认内容</p>
+    <p class="iot">默认内容</p>
+    <h3 id="item">js好难</h3>
+    <script>
+        //根据id名来获取元素
+        var block = document.getElementById("block")
+        console.log(block)
+        block.textContent = 'JS设置的新内容'
+        // 常用方法
+        var contents = document.querySelectorAll('.iot')
+        console.log(contents)
+        var textArr = [
+            "12",
+            '34',
+            '56',
+            '78'
+        ]
+        for (var i = 0; i < contents.length; i++) {
+            contents[i].textContent = textArr[i]
+        }
+        var block2 = document.querySelector("#item")
+        block2.textContent = 'id名改后的效果'
+    </script>
+
+</body>
+
+</html>

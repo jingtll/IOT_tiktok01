@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git config:*)",
+      "Bash(git add:*)",
+      "Bash(git commit -m \"feat: 实现点击发布按钮直接跳转到视频上传页面并自动开始选择文件功能:*)",
+      "Bash(git push:*)"
+    ]
+  }
+}

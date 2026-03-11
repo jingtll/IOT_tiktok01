@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <!-- 根据屏幕大小更换页面内容 -->
+    <style>
+        .box{
+            width: 300px;
+            height: 300px;
+            background-color:aquamarine;
+
+        }
+        @media screen and (max-width: 768px) {
+            .box{
+                background-color: red;
+            }
+            .p1{
+                display: none;
+            }
+            .p2{
+                display: block;
+            }
+            
+        }
+        @media screen and (min-width:768px) and (max-width:996px) {
+            .box{
+                background-color: blue;
+            }
+            .p1{
+                display: block;
+            }
+            .p2{
+                display: none;
+            }
+            
+        }
+        @media screen and (min-width:996px) {
+            .box{
+                background-color: cadetblue;
+            }
+            .p1{
+                display: block;
+            }
+            .p2{
+                display: none;
+            }
+            
+        }
+    </style>
+</head>
+<body>
+    <div class="box"></div>
+    <h3 class="p1">原神</h3>
+    <h3 class="p2">米哈游</h3>
+    
+</body>
+</html>

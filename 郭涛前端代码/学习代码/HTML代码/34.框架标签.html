@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+	<meta charset="UTF-8">
+	<title>34.框架标签</title>
+</head>
+
+<body>
+	<!-- 利用iframe嵌入一个网页 -->
+	<iframe width="500" height="500" src="https://www.baidu.com/" frameborder="2"></iframe>
+	<iframe width="500" height="500" src="https://www.bilibili.com/" frameborder="2"></iframe>
+	<!--利用iframe嵌入其他内容  -->
+	<iframe width="500" height="500" src="./托尔芬.jpeg"></iframe>
+	<!-- 与超链接的target配合使用 --><br>
+	<a href="https:www.bilibili.com" target="bl">B站</a><br>
+	<iframe name="bl" frameborder="0" width="500" height="500"></iframe>
+	<!-- 与表单的target配合使用 --><br>
+	<iframe name="container" frameborder="0" width="500" height="500"></iframe>
+	<form action="https://so.toutiao.com/search" target="container">
+		<input type="text" name="keyword">
+		<button>搜索</button>
+	</form>
+</body>
+
+</html>
