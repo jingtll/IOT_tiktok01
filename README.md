@@ -1,6 +1,23 @@
-# iot-vue3
+# IOT TikTok - Vue 3 Project
 
-This template should help get you started developing with Vue 3 in Vite.
+This is an IOT TikTok project built with Vue 3 and Vite.
+
+## Features
+- Vue 3 with Composition API
+- Vant UI components
+- Pinia state management
+- Vue Router navigation
+- Axios HTTP requests
+- Video player integration
+- User authentication
+- Video upload functionality
+
+## Deployment
+Deployed on Vercel: [Your Vercel URL will appear here]
+
+## Recommended IDE Setup
+
+[VS Code](https://code.visualstudio.com/) + [Vue (Official)](https://marketplace.visualstudio.com/items?itemName=Vue.volar) (and disable Vetur).
 
 ## Recommended IDE Setup
 
