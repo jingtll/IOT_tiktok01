@@ -43,10 +43,10 @@
 
       <!-- 操作按钮 -->
       <div class="timeline-actions">
-        <van-button type="default" size="small" @click="showTimeline = false">
+        <van-button type="default" size="normal" round @click="showTimeline = false">
           取消
         </van-button>
-        <van-button type="primary" size="small" @click="confirmCover">
+        <van-button type="primary" size="normal" round @click="confirmCover">
           确认封面
         </van-button>
       </div>
@@ -63,8 +63,10 @@
 
     <!-- 4. 填写视频信息表单 -->
     <van-form v-if="selectedVideo && !uploading && !showTimeline">
-      <van-field v-model="title" label="📹 视频标题" placeholder="请输入视频标题(注：必填)" required />
-      <van-field v-model="description" label="📝视频描述" type="textarea" placeholder="请输入视频描述" rows="3" />
+      <van-field v-model="title" label="视频标题" placeholder="请输入视频标题(注：必填)" left-icon="edit"
+        style="--van-field-left-icon-color: blue;" />
+      <van-field v-model="description" label="  视频描述" type="textarea" placeholder="请输入视频描述" left-icon="records-o"
+        rows="3" />
       <div id="upLoadButton">
         <van-button type="primary" block @click="handleUpload" :loading="uploading" :disabled="!title">
           上传视频
@@ -78,6 +80,7 @@
 import { ref, onMounted } from 'vue'
 import { showToast, showLoadingToast, closeToast } from 'vant'
 import axios from 'axios'
+import request from '../../utils/request'
 
 // 响应式状态声明
 // fileInputRef: 文件选择器的 DOM 引用，用于触发点击事件
@@ -307,10 +310,9 @@ const handleUpload = async () => {
     formData.append('description', description.value)
 
     // 发送 POST 请求到后端 API，支持上传进度跟踪
-    const response = await axios.post('/api/upload/video', formData, {
-      headers: { 'Content-Type': 'multipart/form-data' }, // 必需的头信息
+    const response = await request.post('/upload/video', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
       onUploadProgress: (progressEvent) => {
-        // 计算并更新上传进度百分比
         if (progressEvent.total) {
           uploadProgress.value = Math.round(
             (progressEvent.loaded * 100) / progressEvent.total
@@ -319,16 +321,10 @@ const handleUpload = async () => {
       }
     })
 
-    // 根据服务器返回结果判断上传状态
-    if (response.data.code === 200) {
-      closeToast() // 关闭加载提示
-      // ★ 3. 适配 Mock 响应：展示视频 ID（用于调试和反馈）
-      showToast(`上传成功🎉 视频ID：${response.data.data.videoId}`)
-      resetState() // 重置表单状态，准备下一次上传
-    } else {
-      // 服务器返回错误状态码，抛出异常供外层捕获
-      throw new Error(response.data.msg)
-    }
+    // request 响应拦截器已经统一处理 code !== 200，成功返回 data
+    closeToast()
+    showToast(`上传成功🎉 视频ID：${response.videoId || '已成功上传'}`)
+    resetState()
 
   } catch (error) {
     closeToast() // 关闭加载提示
@@ -411,6 +407,15 @@ const resetState = () => {
   /* 背景固定，滚动时保持不动（创建视差效果） */
 }
 
+/* 表单字段对齐样式 */
+.van-form {
+  margin-top: 20px;
+}
+
+.van-field {
+  margin-bottom: 16px;
+}
+
 /* 文件选择按钮容器样式 - 居中布局 */
 #selectButton {
   display: flex;
@@ -436,6 +441,13 @@ const resetState = () => {
   background: linear-gradient(135deg, rgba(230, 243, 255, 0.6), rgba(240, 248, 255, 0.6));
 }
 
+/* 表单字段标签对齐 */
+.van-field__label {
+  min-width: 80px;
+  text-align: left;
+  font-weight: 500;
+}
+
 /* 时间轴选择器样式 */
 .timeline-container {
   margin: 16px 0;
@@ -458,8 +470,9 @@ const resetState = () => {
 .timeline-actions {
   display: flex;
   justify-content: center;
-  gap: 12px;
-  margin-top: 16px;
+  gap: 50px;
+  margin-top: 40px;
+  margin-bottom: 80px;
 }
 
 .slider-button {

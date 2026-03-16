@@ -29,7 +29,7 @@
       <div class="data-stats">
         <div class="data-item">
           <span class="count">10</span>
-          <span class="text">头条</span>
+          <span class="text">视频</span>
         </div>
         <div class="data-item">
           <span class="count">10</span>
@@ -46,7 +46,8 @@
       </div>
     </div>
     <!-- 收藏与历史 -->
-    <van-grid :column-num="2" clickable>
+    <van-grid :column-num="3" clickable>
+      <van-grid-item icon="like-o" text="喜欢" />
       <van-grid-item icon="star-o" text="收藏" />
       <van-grid-item icon="clock-o" text="历史" />
     </van-grid>
@@ -63,6 +64,13 @@ import { useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/index' // 引入你的 Pinia store
 import { showConfirmDialog } from 'vant'
 import 'vant/es/dialog/style'
+import { createApp } from 'vue';
+import { Tab, Tabs } from 'vant';
+
+const app = createApp();
+app.use(Tab);
+app.use(Tabs);
+
 // const router = useRouter()
 const userStore = useUserStore()
 
@@ -219,12 +227,15 @@ const { onLogout } = useLogout()
 .data-item .text {
   font-size: 40px;
   color: #999;
-  text-shadow: none; /* 覆盖上面的 text-shadow */
+  text-shadow: none;
+  /* 覆盖上面的 text-shadow */
 }
+
 .van-grid-item__icon {
   color: red;
   font-size: 30px;
 }
+
 .loginout {
   text-align: center;
   color: red;
