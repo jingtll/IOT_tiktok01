@@ -36,6 +36,8 @@
           :userId="videoInfo.author.id"
           :isFollowed="videoInfo.is_followed"
           @change="handleFollowChange"
+          @touchstart.stop
+          @touchend.stop
         />
       </div>
       <p class="video-desc">{{ videoInfo.description }}</p>
@@ -73,6 +75,18 @@
       :comment-count="videoInfo.comment_count"
       @comment-add="handleCommentAdd"
       @touchstart.stop
+    />
+
+    <!-- 分享面板 -->
+    <van-share-sheet
+      v-model:show="showShareSheet"
+      title="分享到"
+      :options="shareOptions"
+      @select="onShareSelect"
+      @close="onShareClose"
+      closeable
+      @touchstart.stop
+      @touchend.stop
     />
 
     <!-- 右侧评论按钮（确保点击事件正确） -->
@@ -115,9 +129,30 @@ const cardRef = ref(null)
 const playerRef = ref(null) // 播放器ref，用于调用播放方法
 const showLikeAnim = ref(false)
 const showCommentModal = ref(false)
+const showShareSheet = ref(false)
 const isInView = ref(false)
 const disablePlayerClick = ref(false)
 const likeAnimPosition = ref({ x: 0, y: 0 })
+
+// 分享选项
+const shareOptions = ref([
+  {
+    name: '微信',
+    icon: 'wechat',
+  },
+  {
+    name: '朋友圈',
+    icon: 'wechat-moments',
+  },
+  {
+    name: '微博',
+    icon: 'weibo',
+  },
+  {
+    name: 'QQ',
+    icon: 'qq',
+  },
+])
 // 单双击判定变量
 let touchTimer = null
 let lastTouchTime = 0
@@ -325,12 +360,28 @@ const handleCommentAdd = () => {
 }
 
 const handleShare = () => {
+  // 显示分享面板
+  showShareSheet.value = true
+}
+
+const onShareSelect = (option) => {
+  // 处理分享选择
+  console.log('分享到:', option.name)
+  // 增加分享计数
   const newShareCount = props.videoInfo.share_count + 1
   emit('share-add', {
     id: props.videoInfo.id,
     share_count: newShareCount,
   })
   showSuccessToast('分享成功')
+  // 关闭分享面板
+  showShareSheet.value = false
+}
+
+const onShareClose = () => {
+  // 处理分享面板关闭
+  console.log('分享面板已关闭')
+  showShareSheet.value = false
 }
 
 // 播放器状态同步

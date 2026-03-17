@@ -40,10 +40,13 @@
           注册
         </van-button>
       </div>
-      <div style="text-align: center; margin-top: 16px">
-        <van-button type="text" @click="toLogin">
-          已有账号？立即登录
-        </van-button>
+      <div class="login-tip" @click="toLogin">
+        <div class="tip-content">
+          <div class="tip-text">
+            <p class="tip-title">已有账号？立即登录</p>
+          </div>
+          <van-icon name="arrow" class="tip-arrow" />
+        </div>
       </div>
     </van-form>
   </div>
@@ -114,4 +117,38 @@ const { user, isLoading, onSubmit, toLogin, confirmPassword } = useRegister()
 .page-nav-bar .van-icon{
   color: #fff;
 }
+
+/* 登录提示信息样式 */
+.login-tip {
+  margin: 10px 40px;
+  padding: 30px;
+  background-color: #fff;
+  border-radius: 8px;
+  border: 1px solid #3296fa;
+
+}
+
+.tip-content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.tip-text {
+  flex: 1;
+}
+
+.tip-title {
+  font-size: 26px;
+  font-weight: bold;
+  color: #3296fa;
+  margin: 0;
+  text-align: center;
+}
+
+.tip-arrow {
+  font-size: 20px;
+  color: #3296fa;
+}
+
 </style>
