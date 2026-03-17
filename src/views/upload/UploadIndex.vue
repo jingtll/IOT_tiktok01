@@ -18,6 +18,9 @@
 
       <!-- 视频时长显示 -->
       <p v-if="videoDuration">时长：{{ formatTime(videoDuration) }}</p>
+
+      <!-- 错误信息显示 -->
+      <p v-if="error" style="color: red; margin-top: 8px;">{{ error }}</p>
     </div>
 
     <!-- 时间轴选择器 - 让用户自己选择封面时间点 -->
@@ -61,6 +64,18 @@
     <!-- 2. 上传进度显示 -->
     <van-progress v-if="uploading" :percentage="uploadProgress" stroke-width="8" color="#1989fa" />
 
+    <!-- 用户视频列表展示区域 -->
+    <div v-if="userVideos.length > 0" class="video-list-section">
+      <h3>我的视频</h3>
+      <div class="user-videos-grid">
+        <div v-for="video in userVideos" :key="video.id" class="user-video-item">
+          <img :src="video.cover || video.cover_url" alt="视频封面" class="video-thumbnail" />
+          <p class="video-title">{{ video.title }}</p>
+          <p class="video-stats">点赞: {{ video.like_count }} | 评论: {{ video.comment_count }}</p>
+        </div>
+      </div>
+    </div>
+
     <!-- 4. 填写视频信息表单 -->
     <van-form v-if="selectedVideo && !uploading && !showTimeline">
       <van-field v-model="title" label="视频标题" placeholder="请输入视频标题(注：必填)" left-icon="edit"
@@ -102,6 +117,10 @@ const title = ref('')
 // description: 视频描述（可选字段）
 // uploading: 上传过程中的加载状态
 const uploading = ref(false)
+// error: 错误信息
+const error = ref('')
+// userVideos: 用户的所有视频列表
+const userVideos = ref([])
 const description = ref('')
 // 触发文件选择 - 点击按钮时激活隐藏的 file input 元素
 const triggerFileInput = () => {
@@ -293,6 +312,9 @@ const handleUpload = async () => {
     return
   }
 
+  // 清空之前的错误信息
+  error.value = ''
+
   // 设置上传状态：开始上传，显示进度条和加载提示
   uploading.value = true
   uploadProgress.value = 0
@@ -315,8 +337,8 @@ const handleUpload = async () => {
       }
     }
 
-    // 发送 POST 请求到后端 API，支持上传进度跟踪
-    const videoUrl = await request.post('/api/video/upload', formData, {
+    // 第一步：上传视频文件
+    const uploadResponse = await request.post('/api/video/upload', formData, {
       onUploadProgress: (progressEvent) => {
         if (progressEvent.total) {
           uploadProgress.value = Math.round((progressEvent.loaded * 100) / progressEvent.total)
@@ -324,18 +346,39 @@ const handleUpload = async () => {
       }
     })
 
+    // 第二步：保存视频元信息到数据库
+    const videoInfo = {
+      userId: parseInt(userId),
+      title: title.value,
+      url: uploadResponse.url || uploadResponse.data?.url || uploadResponse || ''
+    }
+
+    const addVideoResponse = await request.post('/api/video/add', videoInfo)
+
     closeToast()
-    showToast(`上传成功🎉 视频地址：${videoUrl || '已成功上传'}`)
+    showToast(`上传成功🎉 视频ID：${addVideoResponse.id || '已成功上传'}`)
+
+    // 刷新用户视频列表
+    if (userId) {
+      try {
+        userVideos.value = await request.get(`/api/video/user/${userId}`)
+      } catch (err) {
+        console.error('获取用户视频失败:', err)
+      }
+    }
+
     resetState()
 
-  } catch (error) {
+  } catch (err) {
     closeToast() // 关闭加载提示
-    console.error('视频上传错误详情:', error)
-    showToast(`上传失败：${error.message || '请稍后重试'}`)
+    error.value = err.message || '请稍后重试'
+    console.error('视频上传错误详情:', err)
+    showToast(`上传失败：${error.value}`)
   } finally {
     uploading.value = false
   }
 }
+
 
 // Base64转Blob（用于上传封面）- 将图片数据URL转换为二进制文件
 const dataURLtoBlob = (dataurl) => {

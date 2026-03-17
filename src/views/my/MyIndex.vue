@@ -67,18 +67,17 @@
     <!-- 作品内容：只在作品tab显示 -->
     <div v-if="active === 0" class="works-content">
       <div class="works-grid">
-        <div v-for="video in works" :key="video.id" class="work-item" @click="playVideo(video)">
+        <div v-for="video in works" :key="video.id" class="work-item" @click="openFullscreenPlayer(video)">
           <img :src="video.cover" alt="视频封面" class="work-cover" />
         </div>
       </div>
-      <!-- <div v-if="currentVideo" class="player-wrap">
-        <div class="player-head">正在播放：{{ currentVideo.title }}</div>
-        <video controls autoplay class="player" :src="currentVideo.src"></video>
-      </div> -->
     </div>
 
     <p class="p" v-else>暂时没有更多了</p>
     <van-cell title="退出登录" class="loginout" v-if="isLoggedIn" @click="onLogout()" />
+
+    <!-- 全屏播放器 -->
+    <FullscreenVideoPlayer v-model:show="showFullscreenPlayer" :video="selectedVideo" @close="handlePlayerClose" />
   </div>
 </template>
 
@@ -88,32 +87,77 @@ import { useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/index' // 引入你的 Pinia store
 import { showConfirmDialog } from 'vant'
 import 'vant/es/dialog/style'
-import { createApp } from 'vue';
-import { Tab, Tabs } from 'vant';
-const app = createApp();
-app.use(Tab);
-app.use(Tabs);
+import FullscreenVideoPlayer from '@/components/FullscreenVideoPlayer.vue'
 
 const active = ref(0)
 const works = ref([
   {
     id: 1,
-
     cover: 'https://images.unsplash.com/photo-1529333166437-7750a6dd5a70?auto=format&fit=crop&w=500&q=80',
     src: 'https://www.w3schools.com/html/mov_bbb.mp4',
-
+    video_url: 'https://www.w3schools.com/html/mov_bbb.mp4',
+    cover_url: 'https://images.unsplash.com/photo-1529333166437-7750a6dd5a70?auto=format&fit=crop&w=500&q=80',
+    description: '测试视频1 - 垂直滑动播放效果',
+    is_liked: false,
+    like_count: 128,
+    comment_count: 23,
+    share_count: 15,
+    is_followed: false,
+    author: {
+      id: 1001,
+      nickname: '测试作者1',
+      avatar: 'https://p3-passport.byteacctimg.com/img/user-avatar/899d539d8098911151e89575e998060d~300x300.image'
+    }
   },
   {
     id: 2,
     cover: 'https://images.unsplash.com/photo-1517694712202-14dd9538aa97?auto=format&fit=crop&w=500&q=80',
     src: 'https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.webm',
+    video_url: 'https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.webm',
+    cover_url: 'https://images.unsplash.com/photo-1517694712202-14dd9538aa97?auto=format&fit=crop&w=500&q=80',
+    description: '测试视频2 - 双击点赞+评论功能',
+    is_liked: false,
+    like_count: 89,
+    comment_count: 11,
+    share_count: 8,
+    is_followed: false,
+    author: {
+      id: 1002,
+      nickname: '测试作者2',
+      avatar: 'https://p9-passport.byteacctimg.com/img/user-avatar/7a079f50178009935900a05095008c63~300x300.image'
+    }
+  },
+  {
+    id: 3,
+    cover: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?auto=format&fit=crop&w=500&q=80',
+    src: 'https://www.w3schools.com/html/mov_bbb.mp4',
+    video_url: 'https://www.w3schools.com/html/mov_bbb.mp4',
+    cover_url: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?auto=format&fit=crop&w=500&q=80',
+    description: '测试视频3 - 全屏播放体验',
+    is_liked: false,
+    like_count: 256,
+    comment_count: 45,
+    share_count: 23,
+    is_followed: false,
+    author: {
+      id: 1003,
+      nickname: '测试作者3',
+      avatar: 'https://p1-jj.byteimg.com/tos-cn-i-t2oaga2asx/gold-user-assets/2019/12/11/16ef5b3f5b5c5c5c~tplv-t2oaga2asx-image.image'
+    }
   }
 ])
 
-const currentVideo = ref(null)
+const selectedVideo = ref(null)
+const showFullscreenPlayer = ref(false)
 
-const playVideo = (video) => {
-  currentVideo.value = video
+const openFullscreenPlayer = (video) => {
+  selectedVideo.value = video
+  showFullscreenPlayer.value = true
+}
+
+const handlePlayerClose = () => {
+  showFullscreenPlayer.value = false
+  selectedVideo.value = null
 }
 
 // const router = useRouter()
@@ -331,25 +375,31 @@ const { onLogout } = useLogout()
   /* padding: 10px; */
   background: #fff;
   /* margin: 8px 10px; */
-  border-radius: 10px;
+  /* border-radius: 10px; */
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .works-grid {
   display: flex;
-  /* gap: 8px; */
+  gap: 5px;
   flex-wrap: wrap;
-  justify-content: space-between;
+  justify-content: center;
+  width: 100%;
+  padding: 0 10px;
+  box-sizing: border-box;
 }
 
 .work-item {
-  width: 33%;
+  width: calc(33.33% - 8px);
+  max-width: 300px;
   height: 350px;
   background: #fafafa;
   border-radius: 10px;
   overflow: hidden;
-  margin-bottom: 8px;
   cursor: pointer;
   border: 1px solid #eee;
+  box-sizing: border-box;
 }
 
 .work-cover {
@@ -357,46 +407,5 @@ const { onLogout } = useLogout()
   height: 100%;
   object-fit: cover;
   display: block;
-}
-
-.work-title {
-  font-size: 14px;
-  color: #333;
-  padding: 6px 8px 0;
-  font-weight: 600;
-}
-
-.work-sub {
-  font-size: 12px;
-  color: #999;
-  padding: 0 8px 8px;
-}
-
-.player-wrap {
-  margin-top: 12px;
-  border: 1px solid #eee;
-  border-radius: 10px;
-  overflow: hidden;
-  background: #fff;
-}
-
-.player-head {
-  padding: 8px;
-  font-size: 14px;
-  color: #333;
-  border-bottom: 1px solid #f0f0f0;
-}
-
-.player {
-  width: 100%;
-  height: 220px;
-  background: #000;
-}
-
-.p {
-  color: gray;
-  font-size: 30px;
-  text-align: center;
-  margin-top: 20px;
 }
 </style>
