@@ -29,6 +29,11 @@
           登录
         </van-button>
       </div>
+      <div style="text-align: center; margin-top: 16px">
+        <van-button type="text" @click="toRegister">
+          没有账号？前往注册
+        </van-button>
+      </div>
     </van-form>
   </div>
 </template>
@@ -89,11 +94,15 @@ const useLogin = () => {
       isLoading.value = false // 无论成功/失败，都关闭加载
     }
   }
+
+  const toRegister = () => {
+    router.push('/register')
+  }
   // 3. 暴露给模板使用的状态和方法
-  return { user, isLoading, onSubmit }
+  return { user, isLoading, onSubmit, toRegister }
 }
 // 调用 Composables，解构使用
-const { user, isLoading, onSubmit } = useLogin()
+const { user, isLoading, onSubmit, toRegister } = useLogin()
 </script>
 
 <style scoped>
