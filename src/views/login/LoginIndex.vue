@@ -75,6 +75,8 @@ const useLogin = () => {
         // console.log('用户登录成功', res.data)
         // 后续业务：如存储token、跳转到首页
         userStore.setToken(res.data.token, res.data)
+        // 同时存储用户ID到localStorage，用于上传功能
+        localStorage.setItem('user_id', res.data.userId)
 
         router.push('/my')
       } else {

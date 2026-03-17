@@ -285,6 +285,14 @@ const handleUpload = async () => {
     return
   }
 
+  // 获取当前用户ID
+  const userId = localStorage.getItem('user_id')
+  if (!userId) {
+    showToast('请先登录后再上传视频')
+    uploading.value = false
+    return
+  }
+
   // 设置上传状态：开始上传，显示进度条和加载提示
   uploading.value = true
   uploadProgress.value = 0
@@ -295,43 +303,37 @@ const handleUpload = async () => {
     const formData = new FormData()
 
     // 添加视频文件（主要上传内容）
-    formData.append('video', selectedVideo.value)
+    formData.append('file', selectedVideo.value)
+    formData.append('userId', userId)
+    formData.append('title', title.value)
 
-    // 条件性添加封面：只有当成功截取封面时才上传
+    // 如果有封面和接口支持，可选追加
     if (coverImage.value) {
       const coverBlob = dataURLtoBlob(coverImage.value)
       if (coverBlob) {
-        formData.append('cover', coverBlob, 'cover.jpg') // 指定文件名
+        formData.append('cover', coverBlob, 'cover.jpg')
       }
     }
 
-    // 添加文本元数据
-    formData.append('title', title.value)
-    formData.append('description', description.value)
-
     // 发送 POST 请求到后端 API，支持上传进度跟踪
-    const response = await request.post('/upload/video', formData, {
-      headers: { 'Content-Type': 'multipart/form-data' },
+    const videoUrl = await request.post('/api/video/upload', formData, {
       onUploadProgress: (progressEvent) => {
         if (progressEvent.total) {
-          uploadProgress.value = Math.round(
-            (progressEvent.loaded * 100) / progressEvent.total
-          )
+          uploadProgress.value = Math.round((progressEvent.loaded * 100) / progressEvent.total)
         }
       }
     })
 
-    // request 响应拦截器已经统一处理 code !== 200，成功返回 data
     closeToast()
-    showToast(`上传成功🎉 视频ID：${response.videoId || '已成功上传'}`)
+    showToast(`上传成功🎉 视频地址：${videoUrl || '已成功上传'}`)
     resetState()
 
   } catch (error) {
     closeToast() // 关闭加载提示
-    // 显示用户友好的错误信息
-    showToast(`上传失败：${error.message}`)
+    console.error('视频上传错误详情:', error)
+    showToast(`上传失败：${error.message || '请稍后重试'}`)
   } finally {
-    uploading.value = false // 无论成功或失败都结束上传状态
+    uploading.value = false
   }
 }
 
