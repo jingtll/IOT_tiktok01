@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>Router Error Test</title>
+</head>
+<body>
+    <script>
+        // 模拟 Vue 组件中的代码
+        function handlePublishClick() {
+            // 这里会报错：router is not defined
+            console.log(router);
+        }
+
+        try {
+            handlePublishClick();
+        } catch (error) {
+            console.error('错误信息:', error.message);
+            alert('错误: ' + error.message);
+        }
+    </script>
+</body>
+</html>
