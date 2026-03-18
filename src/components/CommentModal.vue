@@ -25,9 +25,22 @@
         <div class="comment-content">
           <div class="user-info">
             <span class="nickname">{{ comment.nickname || '匿名用户' }}</span>
-            <span class="time">{{ formatTime(comment.create_time) }}</span>
           </div>
-          <p class="content">{{ comment.content }}</p>
+          <div class="content-wrapper">
+            <p class="content">{{ comment.content }}</p>
+            <div class="comment-actions">
+              <div class="like-btn" @click="handleCommentLike(comment, index)">
+                <van-icon :name="comment.is_liked ? 'like' : 'like-o'" :color="comment.is_liked ? '#ff2442' : '#999'" size="24" />
+                <span class="like-count">{{ comment.like_count || 0 }}</span>
+              </div>
+            </div>
+          </div>
+          <div class="comment-footer">
+            <div class="comment-meta">
+              <span class="time">{{ formatTime(comment.create_time) }}</span>
+              <span class="location">北京</span>
+            </div>
+          </div>
         </div>
       </div>
       <!-- 空状态 -->
@@ -61,8 +74,9 @@
 
 <script setup>
 import { ref, defineProps, defineEmits, watch } from 'vue'
-import { getVideoComments, addVideoComment } from '../api/videoApi.js'
+import { getVideoComments, addVideoComment, likeComment } from '../api/videoApi.js'
 import { showSuccessToast, showFailToast, } from 'vant'
+import { Icon as VanIcon } from 'vant'
 
 // 接收父组件参数
 const props = defineProps({
@@ -137,6 +151,8 @@ const handleSendComment = async () => {
       nickname: '我', // 实际替换为当前用户昵称
       content: content,
       create_time: new Date().toISOString(),
+      is_liked: false,
+      like_count: 0
     })
 
     // 滚动到顶部，显示新评论
@@ -179,6 +195,101 @@ const handleClose = () => {
   emit('update:show', false)
   innerShow.value = false // 兜底：强制关闭内部状态
 }
+
+// 处理评论点赞
+const handleCommentLike = async (comment, index) => {
+  // 确保 comment 有唯一的 id
+  if (!comment.id) {
+    comment.id = `temp_${Date.now()}_${index}`
+  }
+  // 确保 comment 有必要的属性
+  if (comment.is_liked === undefined) {
+    comment.is_liked = false
+  }
+  if (comment.like_count === undefined) {
+    comment.like_count = 0
+  }
+
+  // 保存当前状态，用于错误恢复
+  const originalIsLiked = comment.is_liked
+  const originalLikeCount = comment.like_count
+
+  // 切换点赞状态
+  const newIsLiked = !originalIsLiked
+  const newLikeCount = newIsLiked ? originalLikeCount + 1 : originalLikeCount - 1
+
+  try {
+    // 使用响应式更新方式
+    commentList.value[index] = {
+      ...comment,
+      is_liked: newIsLiked,
+      like_count: newLikeCount
+    }
+
+    // 调用点赞API
+    await likeComment(comment.id)
+
+    // 保存点赞状态到本地存储
+    saveLikeStatus(comment.id, newIsLiked)
+  } catch (error) {
+    console.error('点赞操作失败', error)
+    // 恢复原状态
+    commentList.value[index] = {
+      ...comment,
+      is_liked: originalIsLiked,
+      like_count: originalLikeCount
+    }
+    showFailToast('操作失败，请重试')
+  }
+}
+
+// 保存点赞状态到本地存储
+const saveLikeStatus = (commentId, isLiked) => {
+  // 使用 videoId 和 commentId 组合作为键，避免不同视频的评论冲突
+  const key = `${props.videoId}_${commentId}`
+  const likedComments = JSON.parse(localStorage.getItem('likedComments') || '{}')
+  likedComments[key] = isLiked
+  localStorage.setItem('likedComments', JSON.stringify(likedComments))
+}
+
+// 加载本地存储的点赞状态
+const loadLikeStatus = () => {
+  const likedComments = JSON.parse(localStorage.getItem('likedComments') || '{}')
+  const updatedComments = [...commentList.value]
+  updatedComments.forEach((comment, index) => {
+    // 确保 comment 有唯一的 id
+    if (!comment.id) {
+      comment.id = `temp_${Date.now()}_${index}`
+    }
+    // 确保 is_liked 有默认值 false
+    if (comment.is_liked === undefined) {
+      comment.is_liked = false
+    }
+    // 确保 like_count 有默认值 0
+    if (comment.like_count === undefined) {
+      comment.like_count = 0
+    }
+    // 使用 videoId 和 commentId 组合作为键
+    const key = `${props.videoId}_${comment.id}`
+    // 加载本地存储的状态
+    if (likedComments[key] !== undefined) {
+      updatedComments[index] = {
+        ...comment,
+        is_liked: likedComments[key]
+      }
+    }
+  })
+  // 一次性更新评论列表，避免递归更新
+  commentList.value = updatedComments
+}
+
+// 监听评论列表加载完成，加载点赞状态
+watch(commentList, () => {
+  // 延迟执行，避免递归更新
+  setTimeout(() => {
+    loadLikeStatus()
+  }, 0)
+}, { deep: true, immediate: false })
 </script>
 
 <style scoped>
@@ -232,6 +343,60 @@ const handleClose = () => {
   color: #000;
   line-height: 1.4;
   margin: 0;
+  flex: 1;
+}
+
+.content-wrapper {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 16px;
+}
+
+.comment-footer {
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+}
+
+.comment-meta {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+}
+
+.location {
+  font-size: 22px;
+  color: #999;
+}
+
+.comment-actions {
+  display: flex;
+  align-items: center;
+  margin-left: 16px;
+}
+
+.like-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 12px;
+  transition: background-color 0.2s;
+}
+
+.like-btn:hover {
+  background-color: #f5f5f5;
+}
+
+.like-count {
+  font-size: 22px;
+  color: #999;
+}
+
+.like-btn.liked .like-count {
+  color: #ff2442;
 }
 .empty-comment {
   padding: 40px 0;

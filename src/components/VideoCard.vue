@@ -46,7 +46,7 @@
     <!-- 右侧互动栏 -->
     <div class="video-right-actions">
       <!-- 点赞按钮：加.stop阻止冒泡，不触发父级的touch事件 -->
-      <div class="action-item" @touchstart.stop.prevent="handleLike">
+      <div class="action-item" @touchstart.stop.prevent="handleVideoLike">
         <van-icon
           :name="videoInfo.is_liked ? 'like' : 'like-o'"
           size="40"
@@ -288,7 +288,7 @@ const handleDoubleTouch = () => {
 }
 
 // 点赞核心逻辑
-const handleLike = async () => {
+const handleVideoLike = async () => {
   console.log('点击红心：切换点赞状态，当前状态：', props.videoInfo.is_liked)
   try {
     await likeVideo(props.videoInfo.id)

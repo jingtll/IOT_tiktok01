@@ -26,7 +26,7 @@ export const login = async (user) => {
     return {
       code: 0,
       message: '登录成功',
-      data: { token: 'mock-token-123456', userId: '1001' }
+      data: { token: 'mock-token-123456', userId: '1001', userName: registeredUser.userName }
     };
   } else {
     console.log('执行：登录失败分支');
@@ -61,6 +61,6 @@ export const register = async (user) => {
   return {
     code: 0,
     message: '注册成功',
-    data: { token: 'mock-token-123456', userId: '1001' }
+    data: { token: 'mock-token-123456', userId: '1001', userName: userName }
   };
 };

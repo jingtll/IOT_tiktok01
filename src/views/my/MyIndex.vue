@@ -16,7 +16,7 @@
             <!-- 圆形头像 -->
             <van-image src="https://img.yzcdn.cn/vant/cat.jpeg" class="avatar" round fit="cover" />
             <!-- 用户名 -->
-            <span class="name">lwx</span>
+            <span class="name">{{ userName }}</span>
           </div>
 
         </div>
@@ -77,7 +77,7 @@
     <van-cell title="退出登录" class="loginout" v-if="isLoggedIn" @click="onLogout()" />
 
     <!-- 全屏播放器 -->
-    <FullscreenVideoPlayer v-model:show="showFullscreenPlayer" :video="selectedVideo" @close="handlePlayerClose" />
+    <FullscreenVideoPlayer v-if="showFullscreenPlayer && selectedVideo" v-model:show="showFullscreenPlayer" :video="selectedVideo" @close="handlePlayerClose" />
   </div>
 </template>
 
@@ -165,6 +165,11 @@ const userStore = useUserStore()
 
 // 从 Pinia store 中获取登录状态
 const isLoggedIn = computed(() => userStore.isLoggedIn)
+
+// 从 Pinia store 中获取用户名
+const userName = computed(() => {
+  return userStore.userInfo?.userName || '用户'
+})
 function useLogout() {
   const router = useRouter()
   const userStore = useUserStore()

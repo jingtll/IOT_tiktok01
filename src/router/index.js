@@ -17,7 +17,7 @@ const router = createRouter({
       path: '/',
       name: 'layout',
       component: () => import("../views/layout/LayoutIndex.vue"),
-      redirect: '/my',
+      redirect: '/login',
       children :[
         {
           path: '/my',
