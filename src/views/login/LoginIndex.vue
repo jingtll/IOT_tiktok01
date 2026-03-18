@@ -29,7 +29,19 @@
           登录
         </van-button>
       </div>
+
     </van-form>
+    <!-- 注册提示信息 -->
+    <div class="register-tip" @click="toRegister">
+      <div class="tip-content">
+        <van-icon name="info-o" class="tip-icon" />
+        <div class="tip-text">
+          <p class="tip-title">新用户注册</p>
+          <p class="tip-desc">注册后即可享受更多功能</p>
+        </div>
+        <van-icon name="arrow" class="tip-arrow" />
+      </div>
+    </div>
   </div>
 </template>
 
@@ -91,11 +103,15 @@ const useLogin = () => {
       isLoading.value = false // 无论成功/失败，都关闭加载
     }
   }
+
+  const toRegister = () => {
+    router.push('/register')
+  }
   // 3. 暴露给模板使用的状态和方法
-  return { user, isLoading, onSubmit }
+  return { user, isLoading, onSubmit, toRegister }
 }
 // 调用 Composables，解构使用
-const { user, isLoading, onSubmit } = useLogin()
+const { user, isLoading, onSubmit, toRegister } = useLogin()
 </script>
 
 <style scoped>
@@ -107,5 +123,49 @@ const { user, isLoading, onSubmit } = useLogin()
 }
 .page-nav-bar .van-icon{
   color: #fff;
+}
+
+/* 注册提示信息样式 */
+.register-tip {
+  margin: 60px 16px 20px;
+  padding: 16px;
+  background-color: #f5f5f5;
+  border-radius: 8px;
+  border-left: 10px solid #3296fa;
+  cursor: pointer;
+}
+
+.tip-content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.tip-icon {
+  font-size: 44px;
+  color: #3296fa;
+  margin-right: 12px;
+}
+
+.tip-text {
+  flex: 1;
+}
+
+.tip-title {
+  font-size: 36px;
+  font-weight: bold;
+  color: #333;
+  margin: 0 0 10px 0;
+}
+
+.tip-desc {
+  font-size: 24px;
+  color: #888;
+  margin: 0;
+}
+
+.tip-arrow {
+  font-size: 24px;
+  color: #3296fa;
 }
 </style>
