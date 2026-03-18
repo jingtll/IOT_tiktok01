@@ -58,10 +58,12 @@ import { showLoadingToast, showSuccessToast, showFailToast } from 'vant'
 import 'vant/es/toast/style'
 import { register } from '@/api/mockUser'
 import { useRouter } from 'vue-router'
+import { useUserStore } from '@/stores/index'
 
 const router = useRouter()
 
 const useRegister = () => {
+  const userStore = useUserStore()
   const user = reactive({
     userName: '',
     userPwd: '',
@@ -83,8 +85,10 @@ const useRegister = () => {
       const res = await register(user)
       if (res.code === 0) {
         showSuccessToast('注册成功')
+        // 存储token和用户信息
+        userStore.setToken(res.data.token, res.data)
         setTimeout(() => {
-          router.push('/login')
+          router.push('/my')
         }, 1500)
       } else {
         showFailToast(res.message || '注册失败')

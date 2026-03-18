@@ -113,14 +113,18 @@ export const getVideoComments = async (_videoId) => {
             avatar: 'https://img.yzcdn.cn/vant/cat.jpeg',
             nickname: '小番茄',
             content: '这个视频太好看了！',
-            create_time: new Date(Date.now() - 3600000 * 2).toISOString()
+            create_time: new Date(Date.now() - 3600000 * 2).toISOString(),
+            is_liked: false,
+            like_count: 10
           },
           {
             id: 2,
             avatar: 'https://img.yzcdn.cn/vant/dog.jpeg',
             nickname: '程序员小张',
             content: '支持博主！',
-            create_time: new Date(Date.now() - 86400000 * 1).toISOString()
+            create_time: new Date(Date.now() - 86400000 * 1).toISOString(),
+            is_liked: false,
+            like_count: 5
           }
         ]
       })
