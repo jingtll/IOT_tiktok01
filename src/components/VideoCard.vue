@@ -177,15 +177,16 @@ watch(isInView, async (newVal) => {
     // 先清掉之前的 pause 定时器
     if (pauseTimeout) clearTimeout(pauseTimeout)
     // 延迟 200ms 再播放，避免刚滑入又滑出
-    playTimeout = setTimeout(() => {
+    playTimeout = setTimeout(async () => {
       if (playerRef.value && isInView.value) { // 再检查一次是否还在视口
-        playerRef.value.muted = true
-        playerRef.value.play().catch(err => {
-          // 只有真正的播放限制才打印，忽略 AbortError
-          if (err.name !== 'AbortError') {
-            console.warn('自动播放失败:', err)
-          }
-        })
+        try {
+          playerRef.value.muted = true
+          await playerRef.value.play().catch(err => {
+            console.error('自动播放失败:', err, '视频ID:', props.videoInfo.id)
+          })
+        } catch (error) {
+          console.error('播放异常:', error)
+        }
       }
     }, 200)
   } else {

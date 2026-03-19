@@ -142,9 +142,11 @@ onUnmounted(() => {
   /* 关键：让容器不拦截事件，完全交给父级VideoCard处理 */
   pointer-events: none;
 }
+
 .video-player-container :deep(.xgplayer) {
   pointer-events: none;
 }
+
 .video-player-container :deep(.xgplayer-video) {
   pointer-events: none;
 }

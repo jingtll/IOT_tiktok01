@@ -77,7 +77,8 @@
     <van-cell title="退出登录" class="loginout" v-if="isLoggedIn" @click="onLogout()" />
 
     <!-- 全屏播放器 -->
-    <FullscreenVideoPlayer v-if="showFullscreenPlayer && selectedVideo" v-model:show="showFullscreenPlayer" :video="selectedVideo" @close="handlePlayerClose" />
+    <FullscreenVideoPlayer v-if="showFullscreenPlayer && selectedVideo" v-model:show="showFullscreenPlayer"
+      :video="selectedVideo" @close="handlePlayerClose" />
   </div>
 </template>
 
@@ -112,8 +113,8 @@ const works = ref([
   {
     id: 2,
     cover: 'https://images.unsplash.com/photo-1517694712202-14dd9538aa97?auto=format&fit=crop&w=500&q=80',
-    src: 'https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.webm',
-    video_url: 'https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.webm',
+    src: 'https://www.w3schools.com/html/mov_bbb.mp4',
+    video_url: 'https://www.w3schools.com/html/mov_bbb.mp4',
     cover_url: 'https://images.unsplash.com/photo-1517694712202-14dd9538aa97?auto=format&fit=crop&w=500&q=80',
     description: '测试视频2 - 双击点赞+评论功能',
     is_liked: false,
