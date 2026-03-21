@@ -329,6 +329,16 @@ const handleUpload = async () => {
     formData.append('userId', userId)
     formData.append('title', title.value)
 
+    // 添加视频时长（如果存在），并四舍五入为整数
+    if (videoDuration.value) {
+      formData.append('duration', Math.round(videoDuration.value))
+    }
+
+    // 添加视频时长（如果存在），并四舍五入为整数
+    if (videoDuration.value) {
+      formData.append('duration', Math.round(videoDuration.value))
+    }
+
     // 如果有封面和接口支持，可选追加
     if (coverImage.value) {
       const coverBlob = dataURLtoBlob(coverImage.value)
@@ -337,26 +347,18 @@ const handleUpload = async () => {
       }
     }
 
-    // 第一步：上传视频文件
-    const uploadResponse = await request.post('/api/video/upload', formData, {
+    // 使用后端提供的单一接口上传视频和信息
+    const response = await request.post('/api/video/upload', formData, {
       onUploadProgress: (progressEvent) => {
         if (progressEvent.total) {
           uploadProgress.value = Math.round((progressEvent.loaded * 100) / progressEvent.total)
         }
-      }
+      },
+      timeout: 60000 // 60秒超时
     })
 
-    // 第二步：保存视频元信息到数据库
-    const videoInfo = {
-      userId: parseInt(userId),
-      title: title.value,
-      url: uploadResponse.url || uploadResponse.data?.url || uploadResponse || ''
-    }
-
-    const addVideoResponse = await request.post('/api/video/add', videoInfo)
-
     closeToast()
-    showToast(`上传成功🎉 视频ID：${addVideoResponse.id || '已成功上传'}`)
+    showToast(`上传成功🎉 视频ID：${response.id || '已成功上传'}`)
 
     // 刷新用户视频列表
     if (userId) {

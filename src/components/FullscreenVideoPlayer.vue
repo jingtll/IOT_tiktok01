@@ -8,15 +8,9 @@
       </div>
 
       <!-- 视频卡片组件 -->
-      <VideoCard
-        :video-info="currentVideo"
-        @like="handleLike"
-        @follow-change="handleFollowChange"
-        @comment-add="handleCommentAdd"
-        @share-add="handleShare"
-        @register-player="handleRegisterPlayer"
-        @in-view="handleInView"
-      />
+      <VideoCard :video-info="currentVideo" @like="handleLike" @follow-change="handleFollowChange"
+        @comment-add="handleCommentAdd" @share-add="handleShare" @register-player="handleRegisterPlayer"
+        @in-view="handleInView" />
     </div>
   </div>
 </template>
@@ -46,7 +40,7 @@ const showPlayer = ref(false)
 // 监听props变化
 watch(() => props.show, (newVal) => {
   showPlayer.value = newVal
-})
+}, { immediate: true })
 
 watch(() => props.video, (newVideo) => {
   if (newVideo) {
@@ -62,9 +56,12 @@ const closePlayer = () => {
 }
 
 // 处理互动事件
-const handleLike = (data) => {
-  console.log('点赞:', data)
-  // 这里可以调用API更新数据
+const handleLike = (updateData) => {
+  // VideoCard组件已经处理了API调用和动画，这里只需同步状态
+  if (currentVideo.value && currentVideo.value.id === updateData.id) {
+    currentVideo.value.is_liked = updateData.is_liked
+    currentVideo.value.like_count = updateData.like_count
+  }
 }
 
 const handleFollowChange = (data) => {

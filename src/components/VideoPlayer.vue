@@ -40,18 +40,20 @@ const initPlayer = () => {
     width: '100%',
     height: '100vh',
     playsinline: true,
-    autoplay: true,
-    muted: true,
-    preload: 'metadata',
+    autoplay: true, // ✅ 必须设为 true，才能自动播放
+    muted: true,     // ✅ 必须设为 true，绕过浏览器限制
     loop: true,
     controls: false,
-    clickPause: false,
-    doubleClickPause: false,
-    disableSwipe: true,
+    // 【关键修复：彻底禁用xgplayer所有内置点击/双击交互】
+    clickPause: false, // 禁用点击暂停/播放
+    doubleClickPause: false, // 禁用双击暂停/播放
+    disableSwipe: true, // 禁用滑动交互
+    // 禁用所有非必要的交互插件，只保留核心播放能力
     ignores: [
       'progress', 'time', 'volume', 'fullscreen', 'play', 'pause',
       'poster', 'error', 'loading', 'replay', 'playbackRate'
     ],
+    // 禁止播放器拦截任何触摸/点击事件
     touchIgnore: true,
     preventDefault: true,
   })
@@ -62,12 +64,6 @@ const initPlayer = () => {
   // 【关键修复2：禁用播放器内部video元素的所有点击事件】
   const videoEl = player.video
   if (videoEl) {
-    // Avoid potential cache operation errors by setting safe attributes
-    videoEl.crossOrigin = 'anonymous'
-    videoEl.preload = 'metadata'
-    videoEl.setAttribute('playsinline', '')
-    videoEl.setAttribute('webkit-playsinline', '')
-
     videoEl.addEventListener('click', (e) => {
       e.preventDefault()
       e.stopPropagation()
@@ -77,10 +73,6 @@ const initPlayer = () => {
       e.stopPropagation()
     })
   }
-
-  player.on('error', (err) => {
-    console.error('xgplayer playback error', err)
-  })
 
   // 同步播放状态
   player.on('play', () => {
