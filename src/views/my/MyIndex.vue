@@ -10,15 +10,14 @@
 
     <!-- 已登录状态：显示用户信息和数据统计 -->
     <div v-else class="user-info-container">
-      <div class="header user-info">
+      <div class="header user-info" :style="{ background: userBackgroundImage }">
         <div class="base-info">
           <div class="left">
             <!-- 圆形头像 -->
-            <van-image src="https://img.yzcdn.cn/vant/cat.jpeg" class="avatar" round fit="cover" />
+            <van-image :src="userAvatar" class="avatar" round fit="cover" />
             <!-- 用户名 -->
             <span class="name">{{ userName }}</span>
           </div>
-
         </div>
       </div>
 
@@ -42,7 +41,7 @@
         </div>
         <div class="right">
           <!-- 编辑资料按钮 -->
-          <van-button size="small">编辑主页</van-button>
+          <van-button size="small" @click="$router.push('/edit')">编辑主页</van-button>
         </div>
       </div>
     </div>
@@ -66,9 +65,26 @@
 
     <!-- 作品内容：只在作品tab显示 -->
     <div v-if="active === 0" class="works-content">
-      <div class="works-grid">
-        <div v-for="video in works" :key="video.id" class="work-item" @click="openFullscreenPlayer(video)">
-          <img :src="video.cover" alt="视频封面" class="work-cover" />
+      <div v-if="works.length === 0" class="empty-works">
+        <van-icon name="video-o" size="80" color="#ccc" />
+        <p class="empty-text">暂无作品</p>
+        <p class="empty-desc">上传视频后，作品将显示在这里</p>
+        <van-button type="primary" size="large" @click="$router.push('/upload')">
+          立即上传
+        </van-button>
+      </div>
+      <div v-else class="works-grid">
+        <div
+          v-for="video in works"
+          :key="video.id"
+          class="work-item"
+        >
+          <div class="work-item-content" @click="openFullscreenPlayer(video)">
+            <img :src="video.cover" alt="视频封面" class="work-cover" />
+          </div>
+          <div class="delete-button" @click.stop="handleDeleteVideo(video.id)">
+            <van-icon name="cross" size="20" color="#ff4444" />
+          </div>
         </div>
       </div>
     </div>
@@ -77,20 +93,39 @@
     <van-cell title="退出登录" class="loginout" v-if="isLoggedIn" @click="onLogout()" />
 
     <!-- 全屏播放器 -->
+    <FullscreenVideoPlayer
+      v-if="showFullscreenPlayer && selectedVideo"
+      v-model:show="showFullscreenPlayer"
+      :video="selectedVideo"
+      @close="handlePlayerClose"
+      @video-update="handleVideoUpdate"
+    />
     <FullscreenVideoPlayer v-if="showFullscreenPlayer && selectedVideo" v-model:show="showFullscreenPlayer"
       :video="selectedVideo" @close="handlePlayerClose" />
   </div>
 </template>
 
 <script setup>
-import { computed, ref } from 'vue'
+import { computed, ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/index' // 引入你的 Pinia store
-import { showConfirmDialog } from 'vant'
+import { showConfirmDialog, showToast } from 'vant'
 import 'vant/es/dialog/style'
 import FullscreenVideoPlayer from '@/components/FullscreenVideoPlayer.vue'
+import { getUserWorks, deleteVideo } from '@/api/mockApi'
 
 const active = ref(0)
+const works = ref([])
+
+// 加载用户作品
+const loadUserWorks = async () => {
+  try {
+    // 使用与 UploadIndex.vue 相同的方式获取用户 ID，默认为 1001
+    const userId = localStorage.getItem('user_id') || '1001'
+    const userWorks = await getUserWorks(userId)
+    works.value = userWorks
+  } catch (error) {
+    console.error('Failed to load user works:', error)
 const works = ref([
   {
     id: 1,
@@ -146,7 +181,13 @@ const works = ref([
       avatar: 'https://p1-jj.byteimg.com/tos-cn-i-t2oaga2asx/gold-user-assets/2019/12/11/16ef5b3f5b5c5c5c~tplv-t2oaga2asx-image.image'
     }
   }
-])
+}
+
+// 组件挂载时加载作品数据
+onMounted(() => {
+  // 无论是否登录，都加载视频列表，方便测试
+  loadUserWorks()
+})
 
 const selectedVideo = ref(null)
 const showFullscreenPlayer = ref(false)
@@ -161,7 +202,55 @@ const handlePlayerClose = () => {
   selectedVideo.value = null
 }
 
-// const router = useRouter()
+// 处理视频更新事件
+const handleVideoUpdate = (updateData) => {
+  console.log('视频更新:', updateData)
+  // 更新works数组中的视频数据
+  const videoIndex = works.value.findIndex(video => video.id === updateData.id)
+  if (videoIndex !== -1) {
+    // 更新视频数据
+    works.value[videoIndex] = {
+      ...works.value[videoIndex],
+      ...updateData
+    }
+    // 如果更新的是当前选中的视频，也更新selectedVideo
+    if (selectedVideo.value && selectedVideo.value.id === updateData.id) {
+      selectedVideo.value = {
+        ...selectedVideo.value,
+        ...updateData
+      }
+    }
+  }
+}
+
+// 处理删除视频
+const handleDeleteVideo = (videoId) => {
+  showConfirmDialog({
+    title: '确认删除',
+    message: '确定要删除这个视频吗？',
+  })
+    .then(async () => {
+      // 执行删除操作
+      const success = await deleteVideo(videoId)
+      if (success) {
+        showToast('删除成功')
+        // 刷新作品列表
+        await loadUserWorks()
+        // 如果当前正在播放的视频被删除，关闭播放器
+        if (selectedVideo.value && selectedVideo.value.id === videoId) {
+          handlePlayerClose()
+        }
+      } else {
+        showToast('删除失败，请重试')
+      }
+    })
+    .catch(() => {
+      // 取消删除
+      console.log('取消删除')
+    })
+}
+
+
 const userStore = useUserStore()
 
 // 从 Pinia store 中获取登录状态
@@ -171,20 +260,29 @@ const isLoggedIn = computed(() => userStore.isLoggedIn)
 const userName = computed(() => {
   return userStore.userInfo?.userName || '用户'
 })
+
+// 从 Pinia store 中获取用户头像
+const userAvatar = computed(() => {
+  return userStore.userInfo?.avatar || 'https://img.yzcdn.cn/vant/cat.jpeg'
+})
+
+// 从 Pinia store 中获取用户背景图片
+const userBackgroundImage = computed(() => {
+  const backgroundImage = userStore.userInfo?.background_image
+  return backgroundImage ? `url('${backgroundImage}') no-repeat center top` : `url('../../assets/picture1.jpg') no-repeat center top`
+})
 function useLogout() {
   const router = useRouter()
   const userStore = useUserStore()
   const onLogout = () => {
-    // 这里写退出登录的逻辑
-    // 例如：清空 store、清除 token、跳转到登录页等
+    //退出登录的逻辑
     showConfirmDialog({
       title: '确认退出吗',
       message: '退出后需重新登录',
     })
       .then(() => {
         // 1. 清空 Pinia store 中的用户信息
-        userStore.clearToken() // 推荐调用 store 中封装好的 action
-
+        userStore.clearToken() 
         // 2. 跳转到登录页（替换当前路由历史）
         router.replace({ path: '/login' })
       })
@@ -247,7 +345,6 @@ const { onLogout } = useLogout()
 /* 已登录状态：头部背景 */
 .my-container .header.user-info {
   height: 500px;
-  background: url('../../assets/picture1.jpg') no-repeat center top;
   background-size: cover;
   padding-top: 20px;
   box-sizing: border-box;
@@ -293,7 +390,6 @@ const { onLogout } = useLogout()
   background-color: #f5f5f5;
   border: 0;
 }
-
 
 /* ===================== 数据统计区 ===================== */
 .data-stats {
@@ -390,7 +486,7 @@ const { onLogout } = useLogout()
   display: flex;
   gap: 5px;
   flex-wrap: wrap;
-  justify-content: center;
+  justify-content: flex-start;
   width: 100%;
   padding: 0 10px;
   box-sizing: border-box;
@@ -413,5 +509,83 @@ const { onLogout } = useLogout()
   height: 100%;
   object-fit: cover;
   display: block;
+}
+
+.work-item {
+  position: relative;
+  cursor: pointer;
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+
+.work-item:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.work-item-content {
+  width: 100%;
+  height: 100%;
+}
+
+.delete-button {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: rgba(255, 68, 68, 0.9);
+  border-radius: 50%;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 10;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+  opacity: 0;
+  transform: translateX(10px);
+}
+
+.work-item:hover .delete-button {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+.delete-button:hover {
+  background: rgba(255, 68, 68, 1);
+  transform: scale(1.1) translateX(0);
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.3);
+}
+
+/* 空作品提示样式 */
+.empty-works {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 100px 20px;
+  text-align: center;
+  background: #fff;
+  min-height: 400px;
+}
+
+.empty-text {
+  font-size: 36px;
+  color: #333;
+  margin: 20px 0 10px;
+  font-weight: 500;
+}
+
+.empty-desc {
+  font-size: 24px;
+  color: #999;
+  margin: 0 0 40px;
+}
+
+.empty-works .van-button {
+  min-width: 200px;
+  font-size: 28px;
+  padding: 15px 30px;
 }
 </style>

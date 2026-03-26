@@ -3,6 +3,17 @@
   <div class="video-card" ref="cardRef" @touchstart="handleTouchStart" @touchend="handleTouchEnd"
     style="scroll-snap-align: start">
     <!-- 给VideoPlayer加ref，用于调用暴露的方法 -->
+    <VideoPlayer
+      ref="playerRef"
+      :video-url="videoInfo.video_url"
+      :cover-url="videoInfo.cover_url"
+      :is-in-view="isInViewLocal"
+      :video-id="videoInfo.id"
+      :disable-click-control="disablePlayerClick"
+      @register-player="(id, instance) => emit('register-player', id, instance)"
+      @play="handlePlayerPlay"
+      @pause="handlePlayerPause"
+    />
     <VideoPlayer ref="playerRef" :video-url="videoInfo.video_url" :cover-url="videoInfo.cover_url"
       :is-in-view="isInView" :video-id="videoInfo.id" :disable-click-control="disablePlayerClick"
       @register-player="(id, instance) => emit('register-player', id, instance)" @play="handlePlayerPlay"
@@ -14,12 +25,18 @@
     <!-- 底部作者信息 -->
     <div class="video-bottom-info">
       <div class="author-info">
+        <van-image round width="40" height="40" :src="authorInfo.avatar" />
+        <span class="author-name">@{{ authorInfo.nickname }}</span>
+        <div class="bottom-follow-btn" :class="{ 'followed': isFollowed }" @touchstart.stop.prevent="handleFollow">
+          <span v-if="!isFollowed">+ 关注</span>
+          <span v-else>已关注</span>
+        </div>
         <van-image round width="40" height="40" :src="videoInfo.author.avatar" />
         <span class="author-name">@{{ videoInfo.author.nickname }}</span>
         <FollowButton :userId="videoInfo.author.id" :isFollowed="videoInfo.is_followed" @change="handleFollowChange"
           @touchstart.stop @touchend.stop />
       </div>
-      <p class="video-desc">{{ videoInfo.description }}</p>
+      <p class="video-desc">{{ videoDescription }}</p>
     </div>
 
     <!-- 右侧互动栏 -->
@@ -61,20 +78,21 @@
 </template>
 
 <script setup>
-import { ref, defineProps, defineEmits, onUnmounted, watch } from 'vue'
+import { ref, defineProps, defineEmits, onUnmounted, watch, computed } from 'vue'
 import { useIntersectionObserver } from '@vueuse/core'
 import { formatNumber } from '../utils/format.js'
-import { likeVideo } from '../api/videoApi.js'
+import { likeVideo, followUser, unfollowUser } from '../api/videoApi.js'
+import { toggleAuthorFollowStatus, getAuthorFollowStatus, getAuthorInfo } from '../api/mockApi.js'
 import { showSuccessToast } from 'vant'
 import VideoPlayer from './VideoPlayer.vue'
 import LikeAnimation from './LikeAnimation.vue'
-import FollowButton from './FollowButton.vue'
 import CommentModal from './CommentModal.vue'
 
 
 // 接收参数
 const props = defineProps({
   videoInfo: { type: Object, required: true },
+  isInView: { type: Boolean, default: false },
 })
 
 // 事件声明
@@ -87,15 +105,37 @@ const emit = defineEmits([
   'in-view',
 ])
 
+
+
 // 响应式变量
 const cardRef = ref(null)
 const playerRef = ref(null) // 播放器ref，用于调用播放方法
 const showLikeAnim = ref(false)
 const showCommentModal = ref(false)
 const showShareSheet = ref(false)
-const isInView = ref(false)
 const disablePlayerClick = ref(false)
 const likeAnimPosition = ref({ x: 0, y: 0 })
+const isInViewLocal = ref(false)
+const isFollowed = ref(false)
+
+// 计算属性：获取作者信息
+const authorInfo = computed(() => {
+  if (props.videoInfo.author) {
+    // 使用mock数据获取作者信息
+    return getAuthorInfo(props.videoInfo.author.id)
+  } else {
+    return {
+      id: '',
+      nickname: '未知用户',
+      avatar: 'https://img.yzcdn.cn/vant/cat.jpeg'
+    }
+  }
+})
+
+// 计算属性：获取视频信息
+const videoDescription = computed(() => {
+  return props.videoInfo.description || ''
+})
 
 // 分享选项
 const shareOptions = ref([
@@ -129,17 +169,26 @@ useIntersectionObserver(
   cardRef,
   ([{ isIntersecting }]) => {
     console.log('视口状态变化:', isIntersecting, '视频ID:', props.videoInfo.id) // 加调试打印
-    isInView.value = isIntersecting
+    isInViewLocal.value = isIntersecting
   },
   { threshold: 0.8 }, // 80%进入视口才触发，符合抖音的滑动逻辑
 )
-// 监听 isInView 变化，通知父组件当前视频在视口
-watch(isInView, async (newVal) => {
+// 监听 isInViewLocal 变化，通知父组件当前视频在视口
+watch(isInViewLocal, async (newVal) => {
   if (newVal) {
     emit('in-view', props.videoInfo.id)
     // 先清掉之前的 pause 定时器
     if (pauseTimeout) clearTimeout(pauseTimeout)
     // 延迟 200ms 再播放，避免刚滑入又滑出
+    playTimeout = setTimeout(() => {
+      if (playerRef.value && isInViewLocal.value) { // 再检查一次是否还在视口
+        playerRef.value.muted = true
+        playerRef.value.play().catch(err => {
+          // 只有真正的播放限制才打印，忽略 AbortError
+          if (err.name !== 'AbortError') {
+            console.warn('自动播放失败:', err)
+          }
+        })
     playTimeout = setTimeout(async () => {
       if (playerRef.value && isInView.value) { // 再检查一次是否还在视口
         try {
@@ -157,12 +206,20 @@ watch(isInView, async (newVal) => {
     if (playTimeout) clearTimeout(playTimeout)
     // 延迟 100ms 再暂停，避免短暂滑出误暂停
     pauseTimeout = setTimeout(() => {
-      if (playerRef.value && !isInView.value) {
+      if (playerRef.value && !isInViewLocal.value) {
         playerRef.value.pause()
       }
     }, 100)
   }
 }, { immediate: true })
+
+// 监听视频信息变化，更新关注状态
+watch(() => props.videoInfo, (newVideoInfo) => {
+  if (newVideoInfo && newVideoInfo.author) {
+    const authorId = newVideoInfo.author.id
+    isFollowed.value = getAuthorFollowStatus(authorId)
+  }
+}, { immediate: true, deep: true })
 // 数字格式化
 const formatCount = (num) => {
   return formatNumber(num)
@@ -215,7 +272,7 @@ const handleTouchEnd = (e) => {
   const deltaX = Math.abs(touchEndX - touchStartX)
   const deltaY = Math.abs(touchEndY - touchStartY)
 
-  // 🌟 关键：如果滑动距离超过 10px，判定为滑动，不执行点击逻辑
+  // 如果滑动距离超过 10px，判定为滑动，不执行点击逻辑
   if (deltaX > 10 || deltaY > 10) {
     // 是滑动：清空单双击定时器，不执行任何点击逻辑
     if (touchTimer) {
@@ -253,12 +310,11 @@ const handleDoubleTouch = () => {
 
 // 点赞核心逻辑
 const handleVideoLike = async () => {
-  console.log('点击红心：切换点赞状态，当前状态：', props.videoInfo.is_liked)
+  // console.log('点击红心：切换点赞状态，当前状态：', props.videoInfo.is_liked)
   try {
     await likeVideo(props.videoInfo.id)
     // 只点赞，不取消
     let newIsLiked, newLikeCount
-    // 🌟 关键修复：用清晰的 if-else 替代取反，避免旧值干扰
     if (props.videoInfo.is_liked) {
       // 当前已点赞 → 取消点赞
       newIsLiked = false
@@ -296,20 +352,12 @@ const handleLikeOnly = async () => {
     }
     emit('like', updateData)
     console.log('子组件emit数据:', updateData)
-    // showSuccessToast('点赞成功')
+
   } catch (error) {
     console.error('点赞失败', error)
     showSuccessToast('操作失败，请重试')
   }
 }
-// 其他互动逻辑
-const handleFollowChange = (newVal) => {
-  emit('follow-change', {
-    id: props.videoInfo.id,
-    is_followed: newVal,
-  })
-}
-
 // 打开评论弹窗
 const openCommentModal = () => {
   showCommentModal.value = true
@@ -348,6 +396,50 @@ const onShareClose = () => {
   showShareSheet.value = false
 }
 
+// 处理关注/取消关注操作
+// 点击关注按钮时触发，根据当前关注状态执行相应操作
+
+const handleFollow = async () => {
+  console.log('点击关注按钮，当前状态：', isFollowed.value)
+  try {
+    // 构建API调用参数
+    const authorId = authorInfo.value.id
+
+    // 切换mock关注状态
+    const newFollowStatus = toggleAuthorFollowStatus(authorId)
+    console.log('切换后的关注状态:', newFollowStatus)
+
+    // 更新本地关注状态
+    isFollowed.value = newFollowStatus
+
+    if (newFollowStatus) {
+      // 关注操作
+      await followUser(authorId)
+      // 通知父组件关注状态变化
+      emit('follow-change', {
+        author_id: authorId,
+        is_followed: true
+      })
+      showSuccessToast('关注成功')
+    } else {
+      // 取消关注操作
+      await unfollowUser(authorId)
+      // 通知父组件关注状态变化
+      emit('follow-change', {
+        author_id: authorId,
+        is_followed: false
+      })
+      showSuccessToast('已取消关注')
+    }
+  } catch (error) {
+    console.error('关注操作失败', error)
+    // 操作失败时，恢复原来的关注状态
+    const authorId = authorInfo.value.id
+    isFollowed.value = getAuthorFollowStatus(authorId)
+    showSuccessToast('操作失败，请重试')
+  }
+}
+
 // 播放器状态同步
 const handlePlayerPlay = () => { }
 const handlePlayerPause = () => { }
@@ -382,6 +474,30 @@ onUnmounted(() => {
   align-items: center;
   gap: 18px;
   margin-bottom: 8px;
+}
+
+.bottom-follow-btn {
+  padding: 8px 16px;
+  background-color: #ff2442;
+  color: #fff;
+  border-radius: 16px;
+  font-size: 24px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.bottom-follow-btn:hover {
+  background-color: #ff3a55;
+}
+
+.bottom-follow-btn:active {
+  transform: scale(0.95);
+}
+
+.bottom-follow-btn.followed {
+  background-color: #888;
+  color: #fff;
 }
 
 .video-right-actions {

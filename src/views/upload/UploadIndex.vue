@@ -69,9 +69,14 @@
       <h3>我的视频</h3>
       <div class="user-videos-grid">
         <div v-for="video in userVideos" :key="video.id" class="user-video-item">
-          <img :src="video.cover || video.cover_url" alt="视频封面" class="video-thumbnail" />
-          <p class="video-title">{{ video.title }}</p>
-          <p class="video-stats">点赞: {{ video.like_count }} | 评论: {{ video.comment_count }}</p>
+          <div class="video-item-content" @click="openFullscreenPlayer(video)">
+            <img :src="video.cover || video.cover_url" alt="视频封面" class="video-thumbnail" />
+            <p class="video-title">{{ video.title }}</p>
+            <p class="video-stats">点赞: {{ video.like_count }} | 评论: {{ video.comment_count }}</p>
+          </div>
+          <div class="delete-button" @click.stop="handleDeleteVideo(video.id)">
+            <van-icon name="cross" size="20" color="#ff4444" />
+          </div>
         </div>
       </div>
     </div>
@@ -88,20 +93,33 @@
         </van-button>
       </div>
     </van-form>
+
+    <!-- 全屏播放器 -->
+    <FullscreenVideoPlayer
+      v-if="showFullscreenPlayer && selectedPlayVideo"
+      v-model:show="showFullscreenPlayer"
+      :video="selectedPlayVideo"
+      @close="handlePlayerClose"
+      @video-update="handleVideoUpdate"
+    />
   </div>
 </template>
 
 <script setup>
 import { ref, onMounted } from 'vue'
-import { showToast, showLoadingToast, closeToast } from 'vant'
-import axios from 'axios'
-import request from '../../utils/request'
+import { showToast, showLoadingToast, closeToast, showConfirmDialog } from 'vant'
+import { uploadVideo, addVideo, getUserVideos, deleteVideo } from '@/api/mockApi'
+import FullscreenVideoPlayer from '@/components/FullscreenVideoPlayer.vue'
 
 // 响应式状态声明
 // fileInputRef: 文件选择器的 DOM 引用，用于触发点击事件
 const fileInputRef = ref(null)
 // selectedVideo: 当前选中的视频文件对象
 const selectedVideo = ref(null)
+// selectedVideoBase64: 选中视频的 Base64 编码，用于存储
+const selectedVideoBase64 = ref('')
+// selectedVideoBlobUrl: 选中视频的 Blob URL，用于播放
+const selectedVideoBlobUrl = ref('')
 // uploadProgress: 上传进度百分比 (0-100)
 const uploadProgress = ref(0)
 // coverImage: 视频封面图片的 Base64 数据URL
@@ -122,15 +140,91 @@ const error = ref('')
 // userVideos: 用户的所有视频列表
 const userVideos = ref([])
 const description = ref('')
+// 全屏播放器相关状态
+const showFullscreenPlayer = ref(false)
+const selectedPlayVideo = ref(null)
 // 触发文件选择 - 点击按钮时激活隐藏的 file input 元素
 const triggerFileInput = () => {
   // 使用可选链操作符安全地访问 ref，避免 null 引用错误
   fileInputRef.value?.click()
 }
 
+// 加载用户视频列表
+const loadUserVideos = async () => {
+  try {
+    const userId = localStorage.getItem('user_id') || '1001' // 默认为1001
+    const videos = await getUserVideos(userId)
+    userVideos.value = videos
+  } catch (error) {
+    console.error('Failed to load user videos:', error)
+  }
+}
+
+// 打开全屏播放器
+const openFullscreenPlayer = (video) => {
+  selectedPlayVideo.value = video
+  showFullscreenPlayer.value = true
+}
+
+// 关闭播放器
+const handlePlayerClose = () => {
+  showFullscreenPlayer.value = false
+  selectedPlayVideo.value = null
+}
+
+// 处理视频更新事件
+const handleVideoUpdate = (updateData) => {
+  console.log('视频更新:', updateData)
+  // 更新userVideos数组中的视频数据
+  const videoIndex = userVideos.value.findIndex(video => video.id === updateData.id)
+  if (videoIndex !== -1) {
+    // 更新视频数据
+    userVideos.value[videoIndex] = {
+      ...userVideos.value[videoIndex],
+      ...updateData
+    }
+    // 如果更新的是当前选中的视频，也更新selectedPlayVideo
+    if (selectedPlayVideo.value && selectedPlayVideo.value.id === updateData.id) {
+      selectedPlayVideo.value = {
+        ...selectedPlayVideo.value,
+        ...updateData
+      }
+    }
+  }
+}
+
+// 处理删除视频
+const handleDeleteVideo = (videoId) => {
+  showConfirmDialog({
+    title: '确认删除',
+    message: '确定要删除这个视频吗？',
+  })
+    .then(async () => {
+      // 执行删除操作
+      const success = await deleteVideo(videoId)
+      if (success) {
+        showToast('删除成功')
+        // 刷新视频列表
+        await loadUserVideos()
+        // 如果当前正在播放的视频被删除，关闭播放器
+        if (selectedPlayVideo.value && selectedPlayVideo.value.id === videoId) {
+          handlePlayerClose()
+        }
+      } else {
+        showToast('删除失败，请重试')
+      }
+    })
+    .catch(() => {
+      // 取消删除
+      console.log('取消删除')
+    })
+}
+
 // 导出函数供外部调用（用于从其他页面直接触发文件选择）
 onMounted(() => {
   window.triggerVideoUploadFileSelect = triggerFileInput
+  // 组件挂载时加载用户视频列表
+  loadUserVideos()
 })
 
 // 处理文件选择事件 - 异步函数，包含完整验证流程
@@ -147,8 +241,24 @@ const handleFileChange = async (event) => {
     return
   }
 
+  // 验证文件大小：限制不超过4MB
+  const maxSize = 4 * 1024 * 1024 // 4MB
+  if (file.size > maxSize) {
+    showToast('视频文件大小不能超过4MB')
+    return
+  }
+
+  // 读取文件为 Base64 编码，用于存储
+  const videoBase64 = await readFileAsBase64(file)
+  // 生成视频的 Blob URL，用于播放
+  const videoBlobUrl = URL.createObjectURL(file)
+
   // 设置选中的视频文件到响应式状态
   selectedVideo.value = file
+  // 存储视频的 Base64 编码
+  selectedVideoBase64.value = videoBase64
+  // 存储视频的 Blob URL
+  selectedVideoBlobUrl.value = videoBlobUrl
 
   // 显示时间轴选择器，让用户自己选择封面时间点
   showTimeline.value = true
@@ -160,6 +270,20 @@ const handleFileChange = async (event) => {
 
   // 异步加载视频元数据
   await loadVideoMetadata(file)
+}
+
+// 读取文件为 Base64 编码
+const readFileAsBase64 = (file) => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = (event) => {
+      resolve(event.target.result)
+    }
+    reader.onerror = (error) => {
+      reject(error)
+    }
+    reader.readAsDataURL(file)
+  })
 }
 
 // 加载视频元数据 - 获取视频时长信息
@@ -305,12 +429,7 @@ const handleUpload = async () => {
   }
 
   // 获取当前用户ID
-  const userId = localStorage.getItem('user_id')
-  if (!userId) {
-    showToast('请先登录后再上传视频')
-    uploading.value = false
-    return
-  }
+  const userId = localStorage.getItem('user_id') || '1001' // 默认为1001
 
   // 清空之前的错误信息
   error.value = ''
@@ -319,6 +438,15 @@ const handleUpload = async () => {
   uploading.value = true
   uploadProgress.value = 0
   showLoadingToast({ message: '上传中...', forbidClick: true })
+
+  // 模拟上传进度
+  const progressInterval = setInterval(() => {
+    if (uploadProgress.value < 100) {
+      uploadProgress.value += 10
+    } else {
+      clearInterval(progressInterval)
+    }
+  }, 200)
 
   try {
     // 构建 FormData 对象用于 multipart/form-data 上传
@@ -329,6 +457,21 @@ const handleUpload = async () => {
     formData.append('userId', userId)
     formData.append('title', title.value)
 
+    // 第一步：上传视频文件
+    await uploadVideo(formData)
+
+    // 第二步：保存视频元信息到数据库，使用 Base64 编码作为视频 URL
+    const videoInfo = {
+      userId: parseInt(userId),
+      title: title.value,
+      description: description.value,
+      url: selectedVideoBase64.value, // 使用 Base64 编码
+      cover: coverImage.value
+    }
+
+    const addVideoResponse = await addVideo(videoInfo)
+
+    clearInterval(progressInterval)
     // 添加视频时长（如果存在），并四舍五入为整数
     if (videoDuration.value) {
       formData.append('duration', Math.round(videoDuration.value))
@@ -363,7 +506,7 @@ const handleUpload = async () => {
     // 刷新用户视频列表
     if (userId) {
       try {
-        userVideos.value = await request.get(`/api/video/user/${userId}`)
+        userVideos.value = await getUserVideos(userId)
       } catch (err) {
         console.error('获取用户视频失败:', err)
       }
@@ -372,60 +515,39 @@ const handleUpload = async () => {
     resetState()
 
   } catch (err) {
+    clearInterval(progressInterval)
     closeToast() // 关闭加载提示
-    error.value = err.message || '请稍后重试'
+    
+    // 详细的错误处理和用户提示
+    let errorMessage = '上传失败，请稍后重试'
+    if (err.message.includes('存储失败')) {
+      errorMessage = '存储空间不足，请尝试清理浏览器缓存或使用更小的视频文件'
+    } else if (err.message.includes('配额')) {
+      errorMessage = '存储空间配额不足，请尝试清理浏览器缓存后重新上传'
+    }
+    
+    error.value = errorMessage
     console.error('视频上传错误详情:', err)
-    showToast(`上传失败：${error.value}`)
+    showToast(errorMessage)
   } finally {
     uploading.value = false
   }
 }
 
 
-// Base64转Blob（用于上传封面）- 将图片数据URL转换为二进制文件
-const dataURLtoBlob = (dataurl) => {
-  // 输入验证：检查数据URL格式是否有效
-  if (!dataurl || !dataurl.includes(',')) {
-    console.warn('Invalid data URL format')
-    return null
-  }
-
-  try {
-    // 分割数据URL：第一部分是MIME类型，第二部分是Base64编码的数据
-    const arr = dataurl.split(',')
-
-    // 提取MIME类型信息（如 image/jpeg, image/png）
-    const mimeMatch = arr[0].match(/:(.*?);/)
-    if (!mimeMatch) {
-      throw new Error('Invalid MIME type in data URL')
-    }
-
-    const mime = mimeMatch[1]
-
-    // Base64解码：将Base64字符串转换为原始字节
-    const bstr = atob(arr[1])
-    let n = bstr.length
-
-    // 创建Uint8Array来存储二进制数据
-    const u8arr = new Uint8Array(n)
-
-    // 逐个字符转换Base64到原始字节
-    while (n--) {
-      u8arr[n] = bstr.charCodeAt(n)
-    }
-
-    // 返回Blob对象，可用于HTTP上传
-    return new Blob([u8arr], { type: mime })
-  } catch (error) {
-    console.error('Error converting dataURL to blob:', error)
-    return null // 转换失败时返回null
-  }
-}
+// 注：dataURLtoBlob 函数已移除，因为我们现在直接传递 base64 字符串作为封面
 
 // 重置状态 - 清空所有表单和上传相关状态，准备下一次上传
 const resetState = () => {
   // 重置视频文件选择状态
   selectedVideo.value = null
+  // 清除视频的 Base64 编码
+  selectedVideoBase64.value = ''
+  // 清除视频的 Blob URL，避免内存泄漏
+  if (selectedVideoBlobUrl.value) {
+    URL.revokeObjectURL(selectedVideoBlobUrl.value)
+    selectedVideoBlobUrl.value = ''
+  }
   // 清除封面图片数据
   coverImage.value = ''
   // 清除标题输入
@@ -533,5 +655,83 @@ const resetState = () => {
 
 #upLoadButton {
   margin-bottom: 120px;
+}
+
+/* 视频列表样式 */
+.user-videos-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 16px;
+}
+
+.user-video-item {
+  position: relative;
+  cursor: pointer;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+}
+
+.user-video-item:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.video-item-content {
+  width: 100%;
+  height: 100%;
+}
+
+.video-thumbnail {
+  width: 100%;
+  height: 150px;
+  object-fit: cover;
+  border-radius: 8px 8px 0 0;
+}
+
+.video-title {
+  font-size: 14px;
+  font-weight: 500;
+  margin: 8px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.video-stats {
+  font-size: 12px;
+  color: #666;
+  margin: 0 8px 8px;
+}
+
+.delete-button {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: rgba(255, 68, 68, 0.9);
+  border-radius: 50%;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 10;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+  opacity: 0;
+  transform: translateX(10px);
+}
+
+.user-video-item:hover .delete-button {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+.delete-button:hover {
+  background: rgba(255, 68, 68, 1);
+  transform: scale(1.1) translateX(0);
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.3);
 }
 </style>

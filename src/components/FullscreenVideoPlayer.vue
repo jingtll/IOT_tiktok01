@@ -1,5 +1,5 @@
 <template>
-  <div v-if="showPlayer" class="fullscreen-player" @click.self="closePlayer">
+  <div v-if="props.show" class="fullscreen-player" @click.self="closePlayer">
     <!-- 播放器容器 -->
     <div class="player-container">
       <!-- 关闭按钮 -->
@@ -8,6 +8,16 @@
       </div>
 
       <!-- 视频卡片组件 -->
+      <VideoCard
+        v-if="props.video"
+        :video-info="props.video"
+        :is-in-view="true"
+        @like="handleLike"
+        @comment-add="handleCommentAdd"
+        @share-add="handleShare"
+        @register-player="handleRegisterPlayer"
+        @in-view="handleInView"
+      />
       <VideoCard :video-info="currentVideo" @like="handleLike" @follow-change="handleFollowChange"
         @comment-add="handleCommentAdd" @share-add="handleShare" @register-player="handleRegisterPlayer"
         @in-view="handleInView" />
@@ -16,8 +26,6 @@
 </template>
 
 <script setup>
-import { ref, watch } from 'vue'
-import { useRouter } from 'vue-router'
 import VideoCard from './VideoCard.vue'
 
 const props = defineProps({
@@ -31,6 +39,7 @@ const props = defineProps({
   }
 })
 
+const emit = defineEmits(['update:show', 'close', 'video-update'])
 const emit = defineEmits(['update:show', 'close'])
 
 const router = useRouter()
@@ -50,12 +59,16 @@ watch(() => props.video, (newVideo) => {
 
 // 关闭播放器
 const closePlayer = () => {
-  showPlayer.value = false
   emit('update:show', false)
   emit('close')
 }
 
 // 处理互动事件
+const handleLike = (data) => {
+  console.log('点赞:', data)
+  // 通过emit事件通知父组件更新视频数据
+  emit('video-update', data)
+  // 这里可以调用API更新数据
 const handleLike = (updateData) => {
   // VideoCard组件已经处理了API调用和动画，这里只需同步状态
   if (currentVideo.value && currentVideo.value.id === updateData.id) {
@@ -64,16 +77,16 @@ const handleLike = (updateData) => {
   }
 }
 
-const handleFollowChange = (data) => {
-  console.log('关注状态改变:', data)
-}
-
 const handleCommentAdd = (data) => {
   console.log('评论添加:', data)
+  // 通过emit事件通知父组件更新视频数据
+  emit('video-update', data)
 }
 
 const handleShare = (data) => {
   console.log('分享:', data)
+  // 通过emit事件通知父组件更新视频数据
+  emit('video-update', data)
 }
 
 const handleRegisterPlayer = (id, playerInstance) => {
@@ -117,18 +130,28 @@ const handleInView = (videoId) => {
   backdrop-filter: blur(10px);
 }
 
-/* 隐藏VideoCard的底部信息栏，使其看起来像全屏播放器 */
-::v-deep(.video-bottom-info) {
-  display: none !important;
-}
-
-/* 显示右侧操作栏 */
+/* 调整右侧操作栏位置，适应全屏模式 */
 ::v-deep(.video-right-actions) {
-  bottom: 100px !important;
+  bottom: 180px !important;
 }
 
 /* 确保播放器占据整个屏幕 */
 ::v-deep(.video-card) {
   height: 100% !important;
+}
+
+/* 确保底部信息栏在全屏模式下显示 */
+::v-deep(.video-bottom-info) {
+  z-index: 10 !important;
+}
+
+/* 确保作者信息在全屏模式下清晰可见 */
+::v-deep(.author-info) {
+  z-index: 10 !important;
+}
+
+/* 确保视频描述在全屏模式下清晰可见 */
+::v-deep(.video-desc) {
+  z-index: 10 !important;
 }
 </style>
