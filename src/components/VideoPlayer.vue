@@ -35,7 +35,7 @@ const initPlayer = () => {
   if (!playerRef.value || player) return // 避免重复初始化
 
   // 确保视频 URL 有效
-  let validVideoUrl = props.videoUrl || '/src/assets/VID20260310085246.mp4'
+  let validVideoUrl = props.videoUrl || 'https://vjs.zencdn.net/v/oceans.mp4' // 使用在线视频作为备用
 
   // 检查是否是Base64编码的视频
   if (validVideoUrl && validVideoUrl.startsWith('data:')) {
@@ -71,8 +71,8 @@ const initPlayer = () => {
   player.on('error', (error) => {
     console.error('播放器错误:', error)
     // 如果视频加载失败，使用默认视频 URL
-    if (player.src !== '/src/assets/VID20260310085246.mp4') {
-      player.src = '/src/assets/VID20260310085246.mp4'
+    if (player.src !== 'https://vjs.zencdn.net/v/oceans.mp4') {
+      player.src = 'https://vjs.zencdn.net/v/oceans.mp4'
     }
   })
 
@@ -109,8 +109,8 @@ const play = () => {
     return player.play().catch(err => {
       console.warn('play() 调用失败:', err)
       // 如果播放失败，尝试使用默认视频 URL
-      if (player.src !== '/src/assets/VID20260310085246.mp4') {
-        player.src = '/src/assets/VID20260310085246.mp4'
+      if (player.src !== 'https://vjs.zencdn.net/v/oceans.mp4') {
+        player.src = 'https://vjs.zencdn.net/v/oceans.mp4'
         return player.play()
       }
     })
@@ -145,7 +145,7 @@ watch(() => props.isInView, (newVal) => {
 watch(() => props.videoUrl, (newVal) => {
   if (!player) return
   // 确保视频 URL 有效
-  let validVideoUrl = newVal || '/src/assets/VID20260310085246.mp4'
+  let validVideoUrl = newVal || 'https://vjs.zencdn.net/v/oceans.mp4' // 使用在线视频作为备用
 
   // 检查是否是Base64编码的视频
   if (validVideoUrl && validVideoUrl.startsWith('data:')) {
@@ -178,9 +178,11 @@ onUnmounted(() => {
   -webkit-tap-highlight-color: transparent;
   pointer-events: none;
 }
+
 .video-player-container :deep(.xgplayer) {
   pointer-events: none;
 }
+
 .video-player-container :deep(.xgplayer-video) {
   pointer-events: none;
 }
