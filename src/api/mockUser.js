@@ -1,6 +1,18 @@
-// src/api/mockUser.js
+
 // 存储注册的用户
-const registeredUsers = [];
+// 从 localStorage 中读取已注册的用户信息
+const getRegisteredUsers = () => {
+  const users = localStorage.getItem('registeredUsers');
+  return users ? JSON.parse(users) : [];
+};
+
+// 保存注册的用户信息到 localStorage
+const saveRegisteredUsers = (users) => {
+  localStorage.setItem('registeredUsers', JSON.stringify(users));
+};
+
+// 初始化已注册用户
+let registeredUsers = getRegisteredUsers();
 
 // 修改登录所需的用户名和密码
 export const login = async (user) => {
@@ -55,6 +67,8 @@ export const register = async (user) => {
 
   // 注册新用户
   registeredUsers.push({ userName, userPwd });
+  // 保存到 localStorage
+  saveRegisteredUsers(registeredUsers);
   console.log('新用户注册成功：', { userName });
   console.log('当前注册用户：', registeredUsers);
 

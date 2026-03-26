@@ -19,7 +19,8 @@ const props = defineProps({
   videoUrl: { type: String, required: true },
   coverUrl: { type: String, required: true },
   isInView: { type: Boolean, default: false },
-  videoId: { type: [String, Number], required: true }
+  videoId: { type: [String, Number], required: true },
+  disableClickControl: { type: Boolean, default: false }
 })
 
 const emit = defineEmits(['play', 'pause', 'register-player'])
@@ -33,18 +34,26 @@ let player = null
 const initPlayer = () => {
   if (!playerRef.value || player) return // 避免重复初始化
 
+  // 确保视频 URL 有效
+  let validVideoUrl = props.videoUrl || '/src/assets/VID20260310085246.mp4'
+
+  // 检查是否是Base64编码的视频
+  if (validVideoUrl && validVideoUrl.startsWith('data:')) {
+    // Base64编码的视频数据，直接使用
+    console.log('使用Base64编码的视频数据')
+  }
+
   player = new Player({
     el: playerRef.value,
-    url: props.videoUrl,
+    url: validVideoUrl,
     poster: props.coverUrl,
     width: '100%',
     height: '100vh',
     playsinline: true,
-    autoplay: true, // ✅ 必须设为 true，才能自动播放
-    muted: true,     // ✅ 必须设为 true，绕过浏览器限制
+    autoplay: false,
+    muted: true,
     loop: true,
     controls: false,
-    // 【关键修复：彻底禁用xgplayer所有内置点击/双击交互】
     clickPause: false, // 禁用点击暂停/播放
     doubleClickPause: false, // 禁用双击暂停/播放
     disableSwipe: true, // 禁用滑动交互
@@ -58,10 +67,17 @@ const initPlayer = () => {
     preventDefault: true,
   })
 
+  // 添加错误处理
+  player.on('error', (error) => {
+    console.error('播放器错误:', error)
+    // 如果视频加载失败，使用默认视频 URL
+    if (player.src !== '/src/assets/VID20260310085246.mp4') {
+      player.src = '/src/assets/VID20260310085246.mp4'
+    }
+  })
+
   // 注册实例给父组件
   emit('register-player', props.videoId, player)
-
-  // 【关键修复2：禁用播放器内部video元素的所有点击事件】
   const videoEl = player.video
   if (videoEl) {
     videoEl.addEventListener('click', (e) => {
@@ -87,12 +103,16 @@ const initPlayer = () => {
 }
 
 // 对外暴露控制方法
-// 对外暴露控制方法
 const play = () => {
   if (player) {
-    player.muted = true // 强制静音
+    player.muted = true
     return player.play().catch(err => {
       console.warn('play() 调用失败:', err)
+      // 如果播放失败，尝试使用默认视频 URL
+      if (player.src !== '/src/assets/VID20260310085246.mp4') {
+        player.src = '/src/assets/VID20260310085246.mp4'
+        return player.play()
+      }
     })
   }
 }
@@ -105,7 +125,7 @@ const playPause = () => {
   if (isPlaying.value) {
     player.pause()
   } else {
-    player.play()
+    play()
   }
 }
 
@@ -115,11 +135,28 @@ defineExpose({ play, pause, playPause })
 watch(() => props.isInView, (newVal) => {
   if (!player) return
   if (newVal) {
-    player.play()
+    play()
   } else {
     player.pause()
   }
 }, { immediate: true })
+
+// 监听视频 URL 变化
+watch(() => props.videoUrl, (newVal) => {
+  if (!player) return
+  // 确保视频 URL 有效
+  let validVideoUrl = newVal || '/src/assets/VID20260310085246.mp4'
+
+  // 检查是否是Base64编码的视频
+  if (validVideoUrl && validVideoUrl.startsWith('data:')) {
+    // Base64编码的视频数据，直接使用
+    console.log('使用Base64编码的视频数据')
+  }
+
+  if (player.src !== validVideoUrl) {
+    player.src = validVideoUrl
+  }
+})
 
 onMounted(() => {
   setTimeout(() => initPlayer(), 100)
@@ -139,7 +176,6 @@ onUnmounted(() => {
   height: 100%;
   position: relative;
   -webkit-tap-highlight-color: transparent;
-  /* 关键：让容器不拦截事件，完全交给父级VideoCard处理 */
   pointer-events: none;
 }
 .video-player-container :deep(.xgplayer) {

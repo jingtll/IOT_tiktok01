@@ -74,7 +74,7 @@
 
 <script setup>
 import { ref, defineProps, defineEmits, watch } from 'vue'
-import { getVideoComments, addVideoComment, likeComment } from '../api/videoApi.js'
+import { getVideoComments, addVideoComment, toggleCommentLike } from '../api/mockApi.js'
 import { showSuccessToast, showFailToast, } from 'vant'
 import { Icon as VanIcon } from 'vant'
 
@@ -115,8 +115,9 @@ const formatTime = (timeStr) => {
 // 获取评论列表
 const fetchComments = async () => {
   try {
-    const res = await getVideoComments(props.videoId)
-    commentList.value = res.list || []
+    // 使用mock数据获取评论列表
+    const comments = await getVideoComments(props.videoId)
+    commentList.value = comments || []
   } catch (error) {
     console.error('获取评论列表失败', error)
     showFailToast('加载评论失败')
@@ -134,9 +135,10 @@ const handleSendComment = async () => {
 
   isLoading.value = true
   try {
-    // 调用发布评论接口
-    await addVideoComment({
-      video_id: props.videoId,
+    // 使用mock数据发布评论
+    const newComment = await addVideoComment(props.videoId, {
+      avatar: 'https://img.yzcdn.cn/vant/cat.jpeg', // 实际替换为当前用户头像
+      nickname: '我', // 实际替换为当前用户昵称
       content: content,
     })
 
@@ -145,15 +147,8 @@ const handleSendComment = async () => {
     emit('comment-add')
     showSuccessToast('评论发布成功')
 
-    // 模拟新增评论（实际接口返回后用真实数据）
-    commentList.value.unshift({
-      avatar: 'https://img.yzcdn.cn/vant/cat.jpeg', // 实际替换为当前用户头像
-      nickname: '我', // 实际替换为当前用户昵称
-      content: content,
-      create_time: new Date().toISOString(),
-      is_liked: false,
-      like_count: 0
-    })
+    // 使用mock返回的真实数据
+    commentList.value.unshift(newComment)
 
     // 滚动到顶部，显示新评论
     if (commentListRef.value) {
@@ -214,23 +209,12 @@ const handleCommentLike = async (comment, index) => {
   const originalIsLiked = comment.is_liked
   const originalLikeCount = comment.like_count
 
-  // 切换点赞状态
-  const newIsLiked = !originalIsLiked
-  const newLikeCount = newIsLiked ? originalLikeCount + 1 : originalLikeCount - 1
-
   try {
+    // 使用mock数据处理评论点赞
+    const updatedComment = await toggleCommentLike(props.videoId, comment.id)
+
     // 使用响应式更新方式
-    commentList.value[index] = {
-      ...comment,
-      is_liked: newIsLiked,
-      like_count: newLikeCount
-    }
-
-    // 调用点赞API
-    await likeComment(comment.id)
-
-    // 保存点赞状态到本地存储
-    saveLikeStatus(comment.id, newIsLiked)
+    commentList.value[index] = updatedComment
   } catch (error) {
     console.error('点赞操作失败', error)
     // 恢复原状态
@@ -243,53 +227,7 @@ const handleCommentLike = async (comment, index) => {
   }
 }
 
-// 保存点赞状态到本地存储
-const saveLikeStatus = (commentId, isLiked) => {
-  // 使用 videoId 和 commentId 组合作为键，避免不同视频的评论冲突
-  const key = `${props.videoId}_${commentId}`
-  const likedComments = JSON.parse(localStorage.getItem('likedComments') || '{}')
-  likedComments[key] = isLiked
-  localStorage.setItem('likedComments', JSON.stringify(likedComments))
-}
 
-// 加载本地存储的点赞状态
-const loadLikeStatus = () => {
-  const likedComments = JSON.parse(localStorage.getItem('likedComments') || '{}')
-  const updatedComments = [...commentList.value]
-  updatedComments.forEach((comment, index) => {
-    // 确保 comment 有唯一的 id
-    if (!comment.id) {
-      comment.id = `temp_${Date.now()}_${index}`
-    }
-    // 确保 is_liked 有默认值 false
-    if (comment.is_liked === undefined) {
-      comment.is_liked = false
-    }
-    // 确保 like_count 有默认值 0
-    if (comment.like_count === undefined) {
-      comment.like_count = 0
-    }
-    // 使用 videoId 和 commentId 组合作为键
-    const key = `${props.videoId}_${comment.id}`
-    // 加载本地存储的状态
-    if (likedComments[key] !== undefined) {
-      updatedComments[index] = {
-        ...comment,
-        is_liked: likedComments[key]
-      }
-    }
-  })
-  // 一次性更新评论列表，避免递归更新
-  commentList.value = updatedComments
-}
-
-// 监听评论列表加载完成，加载点赞状态
-watch(commentList, () => {
-  // 延迟执行，避免递归更新
-  setTimeout(() => {
-    loadLikeStatus()
-  }, 0)
-}, { deep: true, immediate: false })
 </script>
 
 <style scoped>

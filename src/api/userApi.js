@@ -6,6 +6,32 @@
 import request from '../utils/request'
 
 /**
+ * 登录接口
+ * @param {Object} data - 登录数据
+ * @returns {Promise<Object>} 登录结果
+ */
+export const login = (data) => {
+  return request({
+    method:"POST",
+    url:"/user/login",
+    data,
+  })
+}
+
+/**
+ * 注册接口
+ * @param {Object} data - 注册数据
+ * @returns {Promise<Object>} 注册结果
+ */
+export const register = (data) => {
+  return request({
+    method:"POST",
+    url:"/user/register",
+    data,
+  })
+}
+
+/**
  * 获取当前登录用户的个人信息
  * @returns {Promise<Object>} 用户信息对象
  * @example

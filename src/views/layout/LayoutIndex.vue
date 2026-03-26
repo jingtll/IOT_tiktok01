@@ -4,7 +4,9 @@
     <van-tabbar v-model="active" route>
       <van-tabbar-item icon="home-o" to="/video">主页</van-tabbar-item>
       <van-tabbar-item icon="friends-o" @click="handlePublishClick">发布</van-tabbar-item>
-      <van-tabbar-item icon="setting-o" to="/my">{{ isLoggedIn ? "我的" : "未登录" }}</van-tabbar-item>
+      <van-tabbar-item icon="setting-o" to="/my">{{
+        isLoggedIn ? '我的' : '未登录'
+      }}</van-tabbar-item>
     </van-tabbar>
   </div>
 </template>
@@ -12,7 +14,7 @@
 <script setup>
 import { ref, computed } from 'vue'
 import { useUserStore } from '@/stores/index'
-import { useRouter } from 'vue-router'; // 获取路由实例   
+import { useRouter } from 'vue-router'
 const active = ref(0)
 const router = useRouter()
 const userStore = useUserStore()
