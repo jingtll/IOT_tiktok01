@@ -2,7 +2,7 @@
   <div>
     <van-nav-bar title="注册" class="page-nav-bar">
       <template #left>
-        <van-icon name="cross" size="18" @click="$router.push('/my')"/>
+        <van-icon name="cross" size="18" @click="this.$router.back()"/>
       </template>
     </van-nav-bar>
     <van-form @submit="onSubmit">

@@ -1,5 +1,7 @@
 <template>
   <div class="home-view">
+
+    <!-- 🌟 关键：只有第一个视频时才启用下拉刷新 -->
     <van-pull-refresh
       v-model="loading"
       :disabled="!isFirstVideo"
@@ -35,7 +37,9 @@ const playerMap = new Map()
 const loading = ref(false)
 const currentVideoId = ref(null)
 
+// 🌟 关键：计算属性，判断当前在视口的是不是第一个视频
 const isFirstVideo = computed(() => {
+  // 兜底：如果还没收到当前视频ID，默认启用刷新（第一个视频刚加载时的场景）
   if (!currentVideoId.value) return true
   if (!videoList.value.length) return false
   // 宽松对比，避免数字/字符串类型不一致导致匹配失败

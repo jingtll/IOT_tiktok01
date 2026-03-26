@@ -1,4 +1,4 @@
-// 模拟视频列表数据
+// 模拟视频列表数据（可自行扩展）
 export const getVideoFeed = () => {
   return new Promise((resolve) => {
     setTimeout(() => {
@@ -6,7 +6,7 @@ export const getVideoFeed = () => {
         list: [
           {
             id: 1,
-            video_url: '/src/assets/VID20260310085246.mp4',
+            video_url: 'https://sxd-tx-1315371622.cos.ap-nanjing.myqcloud.com/newPage/Interactive/newhomevideo.mp4', // 测试视频地址
             cover_url: 'https://picsum.photos/720/1280?random=1',
             description: '测试视频1 - 垂直滑动播放效果',
             is_liked: false,
@@ -22,7 +22,7 @@ export const getVideoFeed = () => {
           },
           {
             id: 2,
-            video_url: '/src/assets/VID20260312191109.mp4',
+            video_url: 'https://sxd-tx-1315371622.cos.ap-nanjing.myqcloud.com/newPage/Interactive/newhomevideo.mp4',
             cover_url: 'https://picsum.photos/720/1280?random=2',
             description: '测试视频2 - 双击点赞+评论功能',
             is_liked: false,
@@ -38,9 +38,9 @@ export const getVideoFeed = () => {
           },
           {
             id: 3,
-            video_url: '/src/assets/VID20260313114703.mp4',
+            video_url: 'https://www.scmuseum.cn/file/e79606ddbcfc11eba00c7020840b69ac/CMS/UEDITOR/AECHIVES/20260114/b3db8699ee5e4c07b6800063f8b1f3fd.mp4',
             cover_url: 'https://picsum.photos/720/1280?random=3',
-            description: '测试视频3 - 全屏播放体验',
+            description: '测试视频2 - 双击点赞+评论功能',
             is_liked: false,
             like_count: 89,
             comment_count: 11,
@@ -53,9 +53,9 @@ export const getVideoFeed = () => {
             }
           },{
             id: 4,
-            video_url: '/src/assets/VID20260321194008.mp4',   
+            video_url: 'https://www.scmuseum.cn/file/e79606ddbcfc11eba00c7020840b69ac/CMS/UEDITOR/AECHIVES/20260114/b3db8699ee5e4c07b6800063f8b1f3fd.mp4',
             cover_url: 'https://picsum.photos/720/1280?random=4',
-            description: '测试视频4 - 视频上传功能',
+            description: '测试视频2 - 双击点赞+评论功能',
             is_liked: false,
             like_count: 89,
             comment_count: 11,
