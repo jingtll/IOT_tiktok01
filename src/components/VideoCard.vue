@@ -1,12 +1,7 @@
 <template>
   <!-- 整个卡片的touch事件统一处理，所有交互都走这里 -->
-  <div
-    class="video-card"
-    ref="cardRef"
-    @touchstart="handleTouchStart"
-    @touchend="handleTouchEnd"
-    style="scroll-snap-align: start"
-  >
+  <div class="video-card" ref="cardRef" @touchstart="handleTouchStart" @touchend="handleTouchEnd"
+    style="scroll-snap-align: start">
     <!-- 给VideoPlayer加ref，用于调用暴露的方法 -->
     <VideoPlayer
       ref="playerRef"
@@ -19,13 +14,13 @@
       @play="handlePlayerPlay"
       @pause="handlePlayerPause"
     />
+    <VideoPlayer ref="playerRef" :video-url="videoInfo.video_url" :cover-url="videoInfo.cover_url"
+      :is-in-view="isInView" :video-id="videoInfo.id" :disable-click-control="disablePlayerClick"
+      @register-player="(id, instance) => emit('register-player', id, instance)" @play="handlePlayerPlay"
+      @pause="handlePlayerPause" />
 
     <!-- 双击点赞动画 -->
-    <LikeAnimation
-      :show="showLikeAnim"
-      :position="likeAnimPosition"
-      @animation-end="showLikeAnim = false"
-    />
+    <LikeAnimation :show="showLikeAnim" :position="likeAnimPosition" @animation-end="showLikeAnim = false" />
 
     <!-- 底部作者信息 -->
     <div class="video-bottom-info">
@@ -36,6 +31,10 @@
           <span v-if="!isFollowed">+ 关注</span>
           <span v-else>已关注</span>
         </div>
+        <van-image round width="40" height="40" :src="videoInfo.author.avatar" />
+        <span class="author-name">@{{ videoInfo.author.nickname }}</span>
+        <FollowButton :userId="videoInfo.author.id" :isFollowed="videoInfo.is_followed" @change="handleFollowChange"
+          @touchstart.stop @touchend.stop />
       </div>
       <p class="video-desc">{{ videoDescription }}</p>
     </div>
@@ -44,11 +43,8 @@
     <div class="video-right-actions">
       <!-- 点赞按钮：加.stop阻止冒泡，不触发父级的touch事件 -->
       <div class="action-item" @touchstart.stop.prevent="handleVideoLike">
-        <van-icon
-          :name="videoInfo.is_liked ? 'like' : 'like-o'"
-          size="40"
-          :color="videoInfo.is_liked ? '#ff2442' : '#fff'"
-        />
+        <van-icon :name="videoInfo.is_liked ? 'like' : 'like-o'" size="40"
+          :color="videoInfo.is_liked ? '#ff2442' : '#fff'" />
         <span class="action-text">{{ formatCount(videoInfo.like_count) }}</span>
       </div>
 
@@ -66,25 +62,12 @@
     </div>
 
     <!-- VideoCard.vue 模板里的评论弹窗 -->
-    <CommentModal
-      v-model:show="showCommentModal"
-      :video-id="videoInfo.id"
-      :comment-count="videoInfo.comment_count"
-      @comment-add="handleCommentAdd"
-      @touchstart.stop
-    />
+    <CommentModal v-model:show="showCommentModal" :video-id="videoInfo.id" :comment-count="videoInfo.comment_count"
+      @comment-add="handleCommentAdd" @touchstart.stop />
 
     <!-- 分享面板 -->
-    <van-share-sheet
-      v-model:show="showShareSheet"
-      title="分享到"
-      :options="shareOptions"
-      @select="onShareSelect"
-      @close="onShareClose"
-      closeable
-      @touchstart.stop
-      @touchend.stop
-    />
+    <van-share-sheet v-model:show="showShareSheet" title="分享到" :options="shareOptions" @select="onShareSelect"
+      @close="onShareClose" closeable @touchstart.stop @touchend.stop />
 
     <!-- 右侧评论按钮（确保点击事件正确） -->
     <div class="action-btn" @touchstart.stop.prevent="openCommentModal">
@@ -206,6 +189,16 @@ watch(isInViewLocal, async (newVal) => {
             console.warn('自动播放失败:', err)
           }
         })
+    playTimeout = setTimeout(async () => {
+      if (playerRef.value && isInView.value) { // 再检查一次是否还在视口
+        try {
+          playerRef.value.muted = true
+          await playerRef.value.play().catch(err => {
+            console.error('自动播放失败:', err, '视频ID:', props.videoInfo.id)
+          })
+        } catch (error) {
+          console.error('播放异常:', error)
+        }
       }
     }, 200)
   } else {
@@ -448,8 +441,8 @@ const handleFollow = async () => {
 }
 
 // 播放器状态同步
-const handlePlayerPlay = () => {}
-const handlePlayerPause = () => {}
+const handlePlayerPlay = () => { }
+const handlePlayerPause = () => { }
 
 // 组件卸载清理定时器
 onUnmounted(() => {

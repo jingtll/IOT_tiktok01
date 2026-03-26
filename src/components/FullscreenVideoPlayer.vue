@@ -18,6 +18,9 @@
         @register-player="handleRegisterPlayer"
         @in-view="handleInView"
       />
+      <VideoCard :video-info="currentVideo" @like="handleLike" @follow-change="handleFollowChange"
+        @comment-add="handleCommentAdd" @share-add="handleShare" @register-player="handleRegisterPlayer"
+        @in-view="handleInView" />
     </div>
   </div>
 </template>
@@ -37,6 +40,22 @@ const props = defineProps({
 })
 
 const emit = defineEmits(['update:show', 'close', 'video-update'])
+const emit = defineEmits(['update:show', 'close'])
+
+const router = useRouter()
+const currentVideo = ref(props.video)
+const showPlayer = ref(false)
+
+// 监听props变化
+watch(() => props.show, (newVal) => {
+  showPlayer.value = newVal
+}, { immediate: true })
+
+watch(() => props.video, (newVideo) => {
+  if (newVideo) {
+    currentVideo.value = newVideo
+  }
+})
 
 // 关闭播放器
 const closePlayer = () => {
@@ -50,6 +69,12 @@ const handleLike = (data) => {
   // 通过emit事件通知父组件更新视频数据
   emit('video-update', data)
   // 这里可以调用API更新数据
+const handleLike = (updateData) => {
+  // VideoCard组件已经处理了API调用和动画，这里只需同步状态
+  if (currentVideo.value && currentVideo.value.id === updateData.id) {
+    currentVideo.value.is_liked = updateData.is_liked
+    currentVideo.value.like_count = updateData.like_count
+  }
 }
 
 const handleCommentAdd = (data) => {

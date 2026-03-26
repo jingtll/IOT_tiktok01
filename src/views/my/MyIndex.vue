@@ -100,6 +100,8 @@
       @close="handlePlayerClose"
       @video-update="handleVideoUpdate"
     />
+    <FullscreenVideoPlayer v-if="showFullscreenPlayer && selectedVideo" v-model:show="showFullscreenPlayer"
+      :video="selectedVideo" @close="handlePlayerClose" />
   </div>
 </template>
 
@@ -124,6 +126,60 @@ const loadUserWorks = async () => {
     works.value = userWorks
   } catch (error) {
     console.error('Failed to load user works:', error)
+const works = ref([
+  {
+    id: 1,
+    cover: 'https://images.unsplash.com/photo-1529333166437-7750a6dd5a70?auto=format&fit=crop&w=500&q=80',
+    src: 'https://www.w3schools.com/html/mov_bbb.mp4',
+    video_url: 'https://www.w3schools.com/html/mov_bbb.mp4',
+    cover_url: 'https://images.unsplash.com/photo-1529333166437-7750a6dd5a70?auto=format&fit=crop&w=500&q=80',
+    description: '测试视频1 - 垂直滑动播放效果',
+    is_liked: false,
+    like_count: 128,
+    comment_count: 23,
+    share_count: 15,
+    is_followed: false,
+    author: {
+      id: 1001,
+      nickname: '测试作者1',
+      avatar: 'https://p3-passport.byteacctimg.com/img/user-avatar/899d539d8098911151e89575e998060d~300x300.image'
+    }
+  },
+  {
+    id: 2,
+    cover: 'https://images.unsplash.com/photo-1517694712202-14dd9538aa97?auto=format&fit=crop&w=500&q=80',
+    src: 'https://www.w3schools.com/html/mov_bbb.mp4',
+    video_url: 'https://www.w3schools.com/html/mov_bbb.mp4',
+    cover_url: 'https://images.unsplash.com/photo-1517694712202-14dd9538aa97?auto=format&fit=crop&w=500&q=80',
+    description: '测试视频2 - 双击点赞+评论功能',
+    is_liked: false,
+    like_count: 89,
+    comment_count: 11,
+    share_count: 8,
+    is_followed: false,
+    author: {
+      id: 1002,
+      nickname: '测试作者2',
+      avatar: 'https://p9-passport.byteacctimg.com/img/user-avatar/7a079f50178009935900a05095008c63~300x300.image'
+    }
+  },
+  {
+    id: 3,
+    cover: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?auto=format&fit=crop&w=500&q=80',
+    src: 'https://www.w3schools.com/html/mov_bbb.mp4',
+    video_url: 'https://www.w3schools.com/html/mov_bbb.mp4',
+    cover_url: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?auto=format&fit=crop&w=500&q=80',
+    description: '测试视频3 - 全屏播放体验',
+    is_liked: false,
+    like_count: 256,
+    comment_count: 45,
+    share_count: 23,
+    is_followed: false,
+    author: {
+      id: 1003,
+      nickname: '测试作者3',
+      avatar: 'https://p1-jj.byteimg.com/tos-cn-i-t2oaga2asx/gold-user-assets/2019/12/11/16ef5b3f5b5c5c5c~tplv-t2oaga2asx-image.image'
+    }
   }
 }
 

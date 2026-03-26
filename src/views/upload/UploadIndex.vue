@@ -472,8 +472,36 @@ const handleUpload = async () => {
     const addVideoResponse = await addVideo(videoInfo)
 
     clearInterval(progressInterval)
+    // 添加视频时长（如果存在），并四舍五入为整数
+    if (videoDuration.value) {
+      formData.append('duration', Math.round(videoDuration.value))
+    }
+
+    // 添加视频时长（如果存在），并四舍五入为整数
+    if (videoDuration.value) {
+      formData.append('duration', Math.round(videoDuration.value))
+    }
+
+    // 如果有封面和接口支持，可选追加
+    if (coverImage.value) {
+      const coverBlob = dataURLtoBlob(coverImage.value)
+      if (coverBlob) {
+        formData.append('cover', coverBlob, 'cover.jpg')
+      }
+    }
+
+    // 使用后端提供的单一接口上传视频和信息
+    const response = await request.post('/api/video/upload', formData, {
+      onUploadProgress: (progressEvent) => {
+        if (progressEvent.total) {
+          uploadProgress.value = Math.round((progressEvent.loaded * 100) / progressEvent.total)
+        }
+      },
+      timeout: 60000 // 60秒超时
+    })
+
     closeToast()
-    showToast(`上传成功🎉 视频ID：${addVideoResponse.id || '已成功上传'}`)
+    showToast(`上传成功🎉 视频ID：${response.id || '已成功上传'}`)
 
     // 刷新用户视频列表
     if (userId) {

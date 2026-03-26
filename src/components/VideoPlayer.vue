@@ -178,9 +178,11 @@ onUnmounted(() => {
   -webkit-tap-highlight-color: transparent;
   pointer-events: none;
 }
+
 .video-player-container :deep(.xgplayer) {
   pointer-events: none;
 }
+
 .video-player-container :deep(.xgplayer-video) {
   pointer-events: none;
 }
